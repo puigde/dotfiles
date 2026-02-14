@@ -18,5 +18,4 @@ SAVEHIST=10000
 setopt HIST_IGNORE_DUPS HIST_IGNORE_SPACE SHARE_HISTORY
 
 # try
-command -v ruby >/dev/null && [ -f "$HOME/.local/bin/try.rb" ] && \
-    eval "$(ruby "$HOME/.local/bin/try.rb" init "$HOME/src/tries")"
+command -v try >/dev/null && eval "$(try init "$HOME/src/tries")"

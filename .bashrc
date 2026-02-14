@@ -11,5 +11,4 @@ HISTFILESIZE=10000
 HISTCONTROL=ignoredups:ignorespace
 
 # try
-command -v ruby >/dev/null && [ -f "$HOME/.local/bin/try.rb" ] && \
-    eval "$(ruby "$HOME/.local/bin/try.rb" init "$HOME/src/tries")"
+command -v try >/dev/null && eval "$(try init "$HOME/src/tries")"

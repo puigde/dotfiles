@@ -10,13 +10,10 @@ local function get_theme()
 end
 vim.o.background = get_theme()
 
--- Transparent background
+-- Transparent background (show terminal bg)
 vim.cmd([[
-    augroup TransparentBG
-        autocmd!
-        autocmd ColorScheme * highlight Normal guibg=NONE ctermbg=NONE
-        autocmd ColorScheme * highlight NonText guibg=NONE ctermbg=NONE
-    augroup END
+    highlight Normal guibg=NONE ctermbg=NONE
+    highlight NonText guibg=NONE ctermbg=NONE
 ]])
 
 -- Options

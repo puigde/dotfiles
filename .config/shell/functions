@@ -47,11 +47,12 @@ if [ "$(uname)" = "Darwin" ]; then
 
         case "$1" in
             d) fg="ffffff"; bg="000000"; theme="dark";  desc="dark (white on black)" ;;
+            m) fg="cdd6f4"; bg="1e1e2e"; theme="dark";  desc="mocha (catppuccin)" ;;
             w) fg="000000"; bg="ffffff"; theme="light"; desc="light (black on white)" ;;
             c) fg="000000"; bg="F0EEE4"; theme="cream"; desc="cream (black on cream)" ;;
             *)
-                echo "Usage: changetheme [d|w|c]"
-                echo "  d - dark    w - light    c - cream"
+                echo "Usage: changetheme [d|m|w|c]"
+                echo "  d - dark    m - mocha    w - light    c - cream"
                 return ;;
         esac
 
@@ -70,7 +71,10 @@ if [ "$(uname)" = "Darwin" ]; then
         rm "$temp_file"
         mkdir -p "$(dirname "$STATE_FILE")"
         echo "$theme" > "$STATE_FILE"
-        kill -SIGUSR2 $(ps -axo pid,comm | grep '[g]hostty' | awk '{print $1}') 2>/dev/null
+        # Update current terminal via OSC sequences (no full reload = no zoom reset)
+        printf '\e]10;#%s\e\\' "$fg"
+        printf '\e]11;#%s\e\\' "$bg"
         echo "Applied: $desc"
     }
+    alias ct='changetheme'
 fi

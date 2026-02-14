@@ -51,11 +51,22 @@ require("lazy").setup({
     {
         "nvim-treesitter/nvim-treesitter",
         build = ":TSUpdate",
-        opts = {
-            ensure_installed = { "markdown", "markdown_inline", "latex", "python", "rust",
-                                 "c", "cpp", "lua", "bash", "json", "yaml", "toml" },
-            highlight = { enable = true },
-        },
+        config = function()
+            require("nvim-treesitter").setup({})
+            -- Install parsers if missing
+            local wanted = { "markdown", "markdown_inline", "latex", "python", "rust",
+                             "c", "cpp", "lua", "bash", "json", "yaml", "toml" }
+            local installed = require("nvim-treesitter").get_installed()
+            local installed_set = {}
+            for _, lang in ipairs(installed) do installed_set[lang] = true end
+            local missing = {}
+            for _, lang in ipairs(wanted) do
+                if not installed_set[lang] then table.insert(missing, lang) end
+            end
+            if #missing > 0 then
+                require("nvim-treesitter").install(missing)
+            end
+        end,
     },
     -- Telescope
     {

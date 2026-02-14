@@ -1,0 +1,51 @@
+#!/bin/bash
+# obs-meeting: Create a meeting note
+# Usage: obs-meeting <project-path> [date]
+# Example: obs-meeting architectures
+# Example: obs-meeting architectures/sub/stability 2026-02-14
+
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+    echo "Usage: obs-meeting <project-path> [date]"
+    exit 1
+fi
+
+PROJECT="$1"
+DATE="${2:-$(date +%Y-%m-%d)}"
+VAULT="${LAB_VAULT:?LAB_VAULT not set. Check ~/.dotfiles.local}"
+DIR="$VAULT/projects/active/$PROJECT/meetings"
+
+mkdir -p "$DIR"
+FILE="$DIR/$DATE.md"
+
+if [ -f "$FILE" ]; then
+    echo "File already exists, opening: $FILE"
+    open "obsidian://open?vault=lab&file=projects/active/$PROJECT/meetings/$DATE"
+    exit 0
+fi
+
+cat > "$FILE" << EOF
+---
+date: $DATE
+attendees:
+  -
+tags:
+  - meeting
+---
+
+# Meeting $DATE
+
+## Agenda
+
+*
+
+## Notes
+
+## Action items
+
+* [ ]
+EOF
+
+echo "Created: $FILE"
+open "obsidian://open?vault=lab&file=projects/active/$PROJECT/meetings/$DATE"

@@ -1,0 +1,27 @@
+#!/bin/bash
+# obs-inbox: Add a URL to the reading inbox
+# Usage: obs-inbox <url> [context]
+# Example: obs-inbox "https://arxiv.org/abs/2401.12345" "new SSM paper from Gu"
+
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+    echo "Usage: obs-inbox <url> [context]"
+    exit 1
+fi
+
+URL="$1"
+CONTEXT="${2:-}"
+DATE=$(date +%Y-%m-%d)
+VAULT="${LAB_VAULT:?LAB_VAULT not set. Check ~/.dotfiles.local}"
+FILE="$VAULT/inbox/reading-list.md"
+
+mkdir -p "$VAULT/inbox"
+
+if [ -n "$CONTEXT" ]; then
+    echo "* $DATE $URL -- $CONTEXT" >> "$FILE"
+else
+    echo "* $DATE $URL" >> "$FILE"
+fi
+
+echo "Added to inbox: $URL"

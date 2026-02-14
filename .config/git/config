@@ -1,0 +1,21 @@
+[user]
+    name = puigde
+    email = polpuigdemont@gmail.com
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[diff]
+    colorMoved = default
+
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+
+[core]
+    excludesFile = ~/.config/git/ignore

@@ -1,0 +1,47 @@
+#!/bin/bash
+# obs-experiment: Create an experiment document
+# Usage: obs-experiment <project-path> <experiment-id> <short-title>
+# Example: obs-experiment architectures exp-003 "rope-ablation"
+
+set -euo pipefail
+
+if [ $# -lt 3 ]; then
+    echo "Usage: obs-experiment <project-path> <experiment-id> <short-title>"
+    exit 1
+fi
+
+PROJECT="$1"
+EXP_ID="$2"
+TITLE="$3"
+DATE=$(date +%Y-%m-%d)
+VAULT="${LAB_VAULT:?LAB_VAULT not set. Check ~/.dotfiles.local}"
+DIR="$VAULT/projects/active/$PROJECT/experiments"
+
+mkdir -p "$DIR"
+FILE="$DIR/$EXP_ID-$TITLE.md"
+
+cat > "$FILE" << EOF
+---
+id: $EXP_ID
+title: "$TITLE"
+date: $DATE
+status: planned
+tags:
+  - experiment
+---
+
+# $EXP_ID: $TITLE
+
+## Hypothesis
+
+## Setup
+
+## Expected outcome
+
+## Results
+
+## Notes
+EOF
+
+echo "Created: $FILE"
+open "obsidian://open?vault=lab&file=projects/active/$PROJECT/experiments/$EXP_ID-$TITLE"

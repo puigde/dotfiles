@@ -1,0 +1,53 @@
+#!/bin/bash
+# obs-concept: Create a concept reference card
+# Usage: obs-concept <concept-name> <field> [subfield]
+# Example: obs-concept layernorm ml
+
+set -euo pipefail
+
+if [ $# -lt 2 ]; then
+    echo "Usage: obs-concept <concept-name> <field> [subfield]"
+    exit 1
+fi
+
+NAME="$1"
+FIELD="$2"
+SUBFIELD="${3:-}"
+VAULT="${LAB_VAULT:?LAB_VAULT not set. Check ~/.dotfiles.local}"
+
+if [ -n "$SUBFIELD" ]; then
+    DIR="$VAULT/library/$FIELD/$SUBFIELD/concepts"
+    FIELD_VAL="$FIELD/$SUBFIELD"
+else
+    DIR="$VAULT/library/$FIELD/concepts"
+    FIELD_VAL="$FIELD"
+fi
+
+mkdir -p "$DIR"
+FILE="$DIR/$NAME.md"
+
+cat > "$FILE" << EOF
+---
+title: "$NAME"
+field: $FIELD_VAL
+aliases:
+  -
+tags:
+  - concept
+---
+
+# $NAME
+
+## Intuition
+
+## Simple example
+
+## Formal definition
+
+## Formal example
+
+## See also
+EOF
+
+echo "Created: $FILE"
+open "obsidian://open?vault=lab&file=library/$FIELD/${SUBFIELD:+$SUBFIELD/}concepts/$NAME"

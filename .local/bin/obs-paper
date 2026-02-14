@@ -1,0 +1,55 @@
+#!/bin/bash
+# obs-paper: Create a new paper reference entry
+# Usage: obs-paper <ShortTitle_AuthorYYYY> <field> [subfield]
+
+set -euo pipefail
+
+if [ $# -lt 2 ]; then
+    echo "Usage: obs-paper <ShortTitle_AuthorYYYY> <field> [subfield]"
+    echo "Example: obs-paper Mamba_Gu2024 ml recurrent-models"
+    exit 1
+fi
+
+NAME="$1"
+FIELD="$2"
+SUBFIELD="${3:-}"
+VAULT="${LAB_VAULT:?LAB_VAULT not set. Check ~/.dotfiles.local}"
+
+if [ -n "$SUBFIELD" ]; then
+    DIR="$VAULT/library/$FIELD/$SUBFIELD/papers"
+    FIELD_VAL="$FIELD/$SUBFIELD"
+else
+    DIR="$VAULT/library/$FIELD/papers"
+    FIELD_VAL="$FIELD"
+fi
+
+mkdir -p "$DIR"
+FILE="$DIR/$NAME.md"
+
+if [ -f "$FILE" ]; then
+    echo "File already exists: $FILE"
+    open "obsidian://open?vault=lab&file=library/$FIELD/${SUBFIELD:+$SUBFIELD/}papers/$NAME"
+    exit 0
+fi
+
+cat > "$FILE" << EOF
+---
+title: ""
+author: ""
+year:
+type: paper
+field: $FIELD_VAL
+url: ""
+code: ""
+status: to-read
+tags:
+  - reference
+---
+
+## Key ideas
+
+## Relevance
+EOF
+
+echo "Created: $FILE"
+open "obsidian://open?vault=lab&file=library/$FIELD/${SUBFIELD:+$SUBFIELD/}papers/$NAME"

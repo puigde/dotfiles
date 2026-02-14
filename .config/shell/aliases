@@ -1,0 +1,17 @@
+# Editor
+command -v nvim >/dev/null && alias vim="nvim"
+alias v='${EDITOR:-vim}'
+
+# Git
+alias gs='git status'
+alias gd='git diff'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias glog='git log --oneline --graph --decorate'
+
+# Vaults (only if paths are set)
+[ -n "$LAB_VAULT" ]  && alias ol='cd "$LAB_VAULT"'
+[ -n "$LIFE_VAULT" ] && alias on='cd "$LIFE_VAULT"'
+[ -n "$LIFE_VAULT" ] && alias od='obs-daily'

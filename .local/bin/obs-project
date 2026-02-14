@@ -1,0 +1,68 @@
+#!/bin/bash
+# obs-project: Create a new project with full structure
+# Usage: obs-project <project-name> <field>
+# Example: obs-project token-merging ml
+
+set -euo pipefail
+
+if [ $# -lt 2 ]; then
+    echo "Usage: obs-project <project-name> <field>"
+    exit 1
+fi
+
+NAME="$1"
+FIELD="$2"
+VAULT="${LAB_VAULT:?LAB_VAULT not set. Check ~/.dotfiles.local}"
+DIR="$VAULT/projects/active/$NAME"
+
+if [ -d "$DIR" ]; then
+    echo "Project already exists: $DIR"
+    exit 1
+fi
+
+mkdir -p "$DIR"/{meetings,results,experiments,notes,sub}
+
+DATE=$(date +%Y-%m-%d)
+
+cat > "$DIR/_overview.md" << EOF
+---
+title: "$NAME"
+status: active
+field: $FIELD
+started: $DATE
+collaborators:
+  -
+repo: ""
+tags:
+  - project
+---
+
+# $NAME
+
+## Problem
+
+## Approach
+
+## Key references
+
+## Related concepts
+
+## Status
+EOF
+
+cat > "$DIR/TODO.md" << EOF
+* [ ]
+EOF
+
+cat > "$DIR/_progress.md" << EOF
+## $DATE
+
+Project created.
+EOF
+
+echo "Created project: $DIR"
+echo "  _overview.md"
+echo "  TODO.md"
+echo "  _progress.md"
+echo "  meetings/ results/ experiments/ notes/ sub/"
+open "obsidian://open?vault=lab&file=projects/active/$NAME/_overview"

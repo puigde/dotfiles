@@ -1,0 +1,76 @@
+# gpm: quick add-commit-push (safer version)
+# Requires a commit message. Uses current branch, not hardcoded main.
+gpm() {
+    if [ -z "$1" ]; then
+        echo "Usage: gpm \"commit message\""
+        return 1
+    fi
+    git add -A && git commit -m "$1" && git push
+}
+
+# og: ripgrep across vault markdown files
+og() {
+    if [ -z "$1" ]; then
+        echo "Usage: og <pattern> [lab|life]"
+        return 1
+    fi
+    local vault_path
+    case "${2:-lab}" in
+        lab)  vault_path="$LAB_VAULT" ;;
+        life) vault_path="$LIFE_VAULT" ;;
+        *)    vault_path="$2" ;;
+    esac
+    if [ -z "$vault_path" ]; then
+        echo "Vault path not set. Check ~/.dotfiles.local"
+        return 1
+    fi
+    rg --type md "$1" "$vault_path"
+}
+
+# mc: copy stdin to local clipboard via OSC 52 (works over SSH + tmux)
+mc() {
+    local input
+    input=$(cat)
+    if [ -n "$TMUX" ]; then
+        printf '\ePtmux;\e\e]52;c;%s\a\e\\' "$(printf '%s' "$input" | base64)"
+    else
+        printf '\e]52;c;%s\a' "$(printf '%s' "$input" | base64)"
+    fi
+}
+
+# changetheme: switch Ghostty theme + write state for nvim (macOS only)
+if [ "$(uname)" = "Darwin" ]; then
+    changetheme() {
+        local CONFIG_PATH="$HOME/.config/ghostty/config"
+        local STATE_FILE="$HOME/.local/state/theme"
+        local fg bg theme desc
+
+        case "$1" in
+            d) fg="ffffff"; bg="000000"; theme="dark";  desc="dark (white on black)" ;;
+            w) fg="000000"; bg="ffffff"; theme="light"; desc="light (black on white)" ;;
+            c) fg="000000"; bg="F0EEE4"; theme="cream"; desc="cream (black on cream)" ;;
+            *)
+                echo "Usage: changetheme [d|w|c]"
+                echo "  d - dark    w - light    c - cream"
+                return ;;
+        esac
+
+        local temp_file=$(mktemp)
+        while IFS= read -r line; do
+            if [[ $line == foreground* ]]; then
+                echo "foreground = #$fg"
+            elif [[ $line == background\ * ]]; then
+                echo "background = #$bg"
+            else
+                echo "$line"
+            fi
+        done < "$CONFIG_PATH" > "$temp_file"
+
+        cat "$temp_file" > "$CONFIG_PATH"
+        rm "$temp_file"
+        mkdir -p "$(dirname "$STATE_FILE")"
+        echo "$theme" > "$STATE_FILE"
+        kill -SIGUSR2 $(ps -axo pid,comm | grep '[g]hostty' | awk '{print $1}') 2>/dev/null
+        echo "Applied: $desc"
+    }
+fi

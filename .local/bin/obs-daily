@@ -1,0 +1,40 @@
+#!/bin/bash
+# obs-daily: Create today's daily note in the life vault
+# Usage: obs-daily [date]
+# Example: obs-daily
+# Example: obs-daily 2026-02-14
+
+set -euo pipefail
+
+DATE="${1:-$(date +%Y-%m-%d)}"
+YEAR=$(echo "$DATE" | cut -d'-' -f1)
+MONTH=$(echo "$DATE" | cut -d'-' -f2)
+DOW=$(date -j -f "%Y-%m-%d" "$DATE" "+%A" 2>/dev/null || date -d "$DATE" "+%A")
+VAULT="${LIFE_VAULT:?LIFE_VAULT not set. Check ~/.dotfiles.local}"
+DIR="$VAULT/Days/$YEAR/$MONTH"
+
+mkdir -p "$DIR"
+FILE="$DIR/$DATE.md"
+
+if [ -f "$FILE" ]; then
+    open "obsidian://open?vault=life&file=Days/$YEAR/$MONTH/$DATE"
+    exit 0
+fi
+
+cat > "$FILE" << EOF
+---
+tags:
+  - days
+---
+
+$DOW
+
+Morning:
+
+Afternoon:
+
+Evening:
+EOF
+
+echo "Created: $FILE"
+open "obsidian://open?vault=life&file=Days/$YEAR/$MONTH/$DATE"

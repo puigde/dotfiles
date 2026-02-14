@@ -11,13 +11,16 @@ if [ "$OS" = "Darwin" ]; then
         echo "Homebrew not found. Install it first: https://brew.sh"
         exit 1
     fi
-    brew install stow fzf </dev/null
+    brew install stow fzf ruby </dev/null
 elif [ "$OS" = "Linux" ]; then
-    sudo apt install -y stow fzf </dev/null
+    sudo apt install -y stow fzf ruby </dev/null
 else
     echo "Unsupported OS: $OS"
     exit 1
 fi
+
+# Ruby-based tools
+gem install try-cli </dev/null
 
 # Ask for vault paths
 printf 'Lab vault path? [~/Documents/lab] (enter to skip): '
@@ -66,12 +69,10 @@ backup "$HOME/.config/git/ignore"
 backup "$HOME/.config/tmux/tmux.conf"
 backup "$HOME/.tmux.conf"
 
-# Backup obs-* scripts and try.rb (stow manages these now)
+# Backup obs-* scripts (stow manages these now)
 for f in "$HOME"/.local/bin/obs-*; do
     backup "$f"
 done
-backup "$HOME/.local/try.rb"
-
 # Stow
 DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$DOTFILES_DIR"

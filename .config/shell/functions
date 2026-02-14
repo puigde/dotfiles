@@ -57,9 +57,9 @@ if [ "$(uname)" = "Darwin" ]; then
 
         local temp_file=$(mktemp)
         while IFS= read -r line; do
-            if [[ $line == foreground* ]]; then
+            if [[ $line == "foreground ="* ]]; then
                 echo "foreground = #$fg"
-            elif [[ $line == background\ * ]]; then
+            elif [[ $line == "background ="* ]]; then
                 echo "background = #$bg"
             else
                 echo "$line"

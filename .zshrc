@@ -16,6 +16,3 @@ HISTFILE="${HOME}/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
 setopt HIST_IGNORE_DUPS HIST_IGNORE_SPACE SHARE_HISTORY
-
-# try
-command -v try >/dev/null && eval "$(try init "$HOME/src/tries")"

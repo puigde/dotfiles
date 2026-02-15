@@ -11,16 +11,20 @@ if [ "$OS" = "Darwin" ]; then
         echo "Homebrew not found. Install it first: https://brew.sh"
         exit 1
     fi
-    brew install stow fzf ruby </dev/null
+    brew install stow fzf ruby ripgrep nvim tmux </dev/null
 elif [ "$OS" = "Linux" ]; then
-    sudo apt install -y stow fzf ruby </dev/null
+    sudo apt install -y stow fzf ruby ripgrep neovim tmux </dev/null
 else
     echo "Unsupported OS: $OS"
     exit 1
 fi
 
-# Ruby-based tools
-gem install try-cli </dev/null
+# Ruby-based tools (use brew ruby on macOS since it's keg-only)
+if [ "$OS" = "Darwin" ]; then
+    /opt/homebrew/opt/ruby/bin/gem install try-cli </dev/null
+else
+    gem install try-cli </dev/null
+fi
 
 # Ask for vault paths
 printf 'Lab vault path? [~/Documents/lab] (enter to skip): '
@@ -64,6 +68,9 @@ backup "$HOME/.bash_profile"
 backup "$HOME/.vimrc"
 backup "$HOME/.config/nvim/init.lua"
 backup "$HOME/.config/ghostty/config"
+backup "$HOME/.config/shell/aliases"
+backup "$HOME/.config/shell/functions"
+backup "$HOME/.config/shell/profile"
 backup "$HOME/.config/git/config"
 backup "$HOME/.config/git/ignore"
 backup "$HOME/.config/tmux/tmux.conf"

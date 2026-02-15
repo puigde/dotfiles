@@ -12,6 +12,12 @@ esac
 # Homebrew (macOS)
 [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 
+# Homebrew Ruby + gems (keg-only, not symlinked)
+if [ -d /opt/homebrew/opt/ruby/bin ]; then
+    export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+    export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"
+fi
+
 # TeX (macOS)
 [ -d /Library/TeX/texbin ] && case ":$PATH:" in
     *":/Library/TeX/texbin:"*) ;;

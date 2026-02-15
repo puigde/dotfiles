@@ -9,6 +9,3 @@ PS1='\u@\W \$ '
 HISTSIZE=10000
 HISTFILESIZE=10000
 HISTCONTROL=ignoredups:ignorespace
-
-# try
-command -v try >/dev/null && eval "$(try init "$HOME/src/tries")"

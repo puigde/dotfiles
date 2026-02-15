@@ -2,6 +2,5 @@ foreground = #cdd6f4
 background = #1e1e2e
 background-opacity = 0.95
 
-# Shift+Enter → CSI u encoding (works in Claude Code both locally and over SSH;
-# prevents raw \e[27;2;13~ xterm modifyOtherKeys sequence over SSH)
-keybind = shift+enter=text:\x1b[13;2u
+# Shift+Enter → ESC CR (what Claude Code expects for newline insertion)
+keybind = shift+enter=text:\x1b\r

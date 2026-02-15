@@ -11,6 +11,10 @@ alias gp='git push'
 alias gl='git pull'
 alias glog='git log --oneline --graph --decorate'
 
+# AI
+alias cld='claude --dangerously-skip-permissions'
+alias cod='codex --full-auto'
+
 # Vaults (only if paths are set)
 [ -n "$LAB_VAULT" ]  && alias ol='cd "$LAB_VAULT"'
 [ -n "$LIFE_VAULT" ] && alias on='cd "$LIFE_VAULT"'

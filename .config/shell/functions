@@ -32,9 +32,9 @@ mc() {
     local input
     input=$(cat)
     if [ -n "$TMUX" ]; then
-        printf '\ePtmux;\e\e]52;c;%s\a\e\\' "$(printf '%s' "$input" | base64)"
+        printf '\ePtmux;\e\e]52;c;%s\a\e\\' "$(printf '%s' "$input" | base64 | tr -d '\n')"
     else
-        printf '\e]52;c;%s\a' "$(printf '%s' "$input" | base64)"
+        printf '\e]52;c;%s\a' "$(printf '%s' "$input" | base64 | tr -d '\n')"
     fi
 }
 
@@ -79,13 +79,10 @@ if [ "$(uname)" = "Darwin" ]; then
 fi
 
 # try (run try.rb directly — gem wrapper breaks __FILE__ == $0 guard)
-if [ -n "$ZSH_VERSION" ]; then
-    for _f in /opt/homebrew/lib/ruby/gems/*/gems/try-cli-*/try.rb(N); do
-        eval "$(/opt/homebrew/opt/ruby/bin/ruby "$_f" init "$HOME/src/tries")" && break
-    done
-else
+# macOS/Homebrew only; uses [ -f ] check which works in both bash and zsh
+if [ -d /opt/homebrew/lib/ruby ]; then
     for _f in /opt/homebrew/lib/ruby/gems/*/gems/try-cli-*/try.rb; do
         [ -f "$_f" ] && eval "$(/opt/homebrew/opt/ruby/bin/ruby "$_f" init "$HOME/src/tries")" && break
     done
+    unset _f
 fi
-unset _f

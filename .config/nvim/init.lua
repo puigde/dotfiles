@@ -6,15 +6,17 @@ local function get_theme()
         f:close()
         if theme == "dark" then return "dark" end
     end
-    return "light"  -- default (cream + light both work as "light")
+    return "dark"  -- default to dark (most terminals)
 end
 vim.o.background = get_theme()
 
--- Transparent background (show terminal bg)
-vim.cmd([[
-    highlight Normal guibg=NONE ctermbg=NONE
-    highlight NonText guibg=NONE ctermbg=NONE
-]])
+-- Transparent background: re-apply after any colorscheme loads
+vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+        vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
+        vim.api.nvim_set_hl(0, "NonText", { bg = "NONE", ctermbg = "NONE" })
+    end,
+})
 
 -- Options
 vim.g.mapleader = " "
@@ -82,6 +84,10 @@ require("lazy").setup({
         opts = { options = { theme = "auto" } },
     },
 }, {
-    install = { colorscheme = { "habamax" } },
+    install = { colorscheme = { "default" } },
     checker = { enabled = false },
 })
+
+-- Transparent background (use terminal colors, not nvim's own bg)
+vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
+vim.api.nvim_set_hl(0, "NonText", { bg = "NONE", ctermbg = "NONE" })

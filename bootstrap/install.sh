@@ -13,17 +13,15 @@ if [ "$OS" = "Darwin" ]; then
     fi
     brew install stow fzf ruby ripgrep nvim tmux </dev/null
 elif [ "$OS" = "Linux" ]; then
-    sudo apt install -y stow fzf ruby ripgrep neovim tmux </dev/null
+    sudo apt install -y stow fzf ripgrep neovim tmux </dev/null
 else
     echo "Unsupported OS: $OS"
     exit 1
 fi
 
-# Ruby-based tools (use brew ruby on macOS since it's keg-only)
+# Ruby-based tools (macOS only — not needed on Linux servers)
 if [ "$OS" = "Darwin" ]; then
     /opt/homebrew/opt/ruby/bin/gem install try-cli </dev/null
-else
-    gem install try-cli </dev/null
 fi
 
 # Ask for vault paths

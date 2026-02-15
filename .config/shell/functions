@@ -8,6 +8,38 @@ gpm() {
     git add -A && git commit -m "$1" && git push
 }
 
+# obs-daily: create (if needed) and open a daily note (default: today)
+# Usage: obs-daily [YYYY-MM-DD]
+obs-daily() {
+    if [ -z "$LIFE_VAULT" ]; then
+        echo "LIFE_VAULT is not set"
+        return 1
+    fi
+    local day=${1:-$(date +%Y-%m-%d)}
+    local year=${day%%-*}
+    local month=${day#*-}; month=${month%%-*}
+    local weekday=$(date -j -f %Y-%m-%d "$day" +%A 2>/dev/null \
+                 || date -d "$day" +%A)
+    local dir="$LIFE_VAULT/Days/$year/$month"
+    local file="$dir/$day.md"
+
+    mkdir -p "$dir"
+    if [ ! -f "$file" ]; then
+        cat > "$file" <<EOF
+#days
+$weekday
+Morning:
+
+Afternoon:
+
+Evening:
+
+EOF
+        echo "Created $file"
+    fi
+    ${EDITOR:-vim} "$file"
+}
+
 # og: ripgrep across vault markdown files
 og() {
     if [ -z "$1" ]; then

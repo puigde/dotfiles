@@ -63,7 +63,9 @@ require("lazy").setup({
                 if not installed_set[lang] then table.insert(missing, lang) end
             end
             if #missing > 0 then
-                require("nvim-treesitter").install(missing)
+                vim.schedule(function()
+                    require("nvim-treesitter").install(missing)
+                end)
             end
         end,
     },

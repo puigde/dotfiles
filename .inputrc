@@ -1,0 +1,2 @@
+# Shift+Enter (xterm modifyOtherKeys encoding) → same as Enter
+"\e[27;2;13~": accept-line

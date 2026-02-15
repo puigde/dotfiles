@@ -1,3 +1,6 @@
 foreground = #000000
 background = #F0EEE4
 background-opacity = 0.95
+
+# Shift+Enter → plain newline (prevents raw \e[27;2;13~ over SSH)
+keybind = shift+enter=text:\n

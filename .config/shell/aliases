@@ -19,3 +19,7 @@ alias cod='codex --full-auto'
 [ -n "$LAB_VAULT" ]  && alias ol='cd "$LAB_VAULT"'
 [ -n "$LIFE_VAULT" ] && alias on='cd "$LIFE_VAULT"'
 [ -n "$LIFE_VAULT" ] && alias od='obs-daily'
+
+# Open vault in Obsidian app
+[ -n "$LAB_VAULT" ]  && alias olab='open "obsidian://open?vault=lab"'
+[ -n "$LIFE_VAULT" ] && alias olife='open "obsidian://open?vault=life"'

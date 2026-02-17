@@ -44,6 +44,18 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- Obsidian vault paths (from environment)
+local lab_vault = os.getenv("LAB_VAULT")
+local life_vault = os.getenv("LIFE_VAULT")
+
+local obsidian_workspaces = {}
+if lab_vault then
+    table.insert(obsidian_workspaces, { name = "lab", path = lab_vault })
+end
+if life_vault then
+    table.insert(obsidian_workspaces, { name = "life", path = life_vault })
+end
+
 -- Plugins
 require("lazy").setup({
     -- Treesitter
@@ -78,8 +90,48 @@ require("lazy").setup({
             { "<leader>ff", function() require("telescope.builtin").find_files() end, desc = "Find files" },
             { "<leader>fg", function() require("telescope.builtin").live_grep() end, desc = "Live grep" },
             { "<leader>fb", function() require("telescope.builtin").buffers() end, desc = "Buffers" },
+            {
+                "<leader>og",
+                function()
+                    local vault = life_vault or lab_vault
+                    if vault then
+                        require("telescope.builtin").live_grep({ search_dirs = { vault } })
+                    else
+                        vim.notify("No Obsidian vault configured", vim.log.levels.WARN)
+                    end
+                end,
+                desc = "Grep Obsidian vault",
+            },
         },
     },
+    -- Obsidian
+    {
+        "epwalsh/obsidian.nvim",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        cond = function()
+            return vim.loop.os_uname().sysname == "Darwin" and #obsidian_workspaces > 0
+        end,
+        opts = {
+            workspaces = obsidian_workspaces,
+            notes_subdir = "cache",
+            new_notes_location = "notes_subdir",
+            disable_frontmatter = true,
+            completion = {
+                nvim_cmp = true,
+                min_chars = 2,
+            },
+            mappings = {
+                ["gf"] = {
+                    action = function()
+                        return require("obsidian").util.gf_passthrough()
+                    end,
+                    opts = { noremap = false, expr = true, buffer = true },
+                },
+            },
+        },
+    },
+    -- Completion engine (required for obsidian.nvim [[search)
+    { "hrsh7th/nvim-cmp" },
     -- Lualine
     {
         "nvim-lualine/lualine.nvim",
@@ -88,6 +140,15 @@ require("lazy").setup({
 }, {
     install = { colorscheme = { "default" } },
     checker = { enabled = false },
+})
+
+-- Disable legacy markdown syntax to let Treesitter handle it
+vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
+    pattern = "markdown",
+    callback = function()
+        vim.cmd("syntax off")
+        vim.treesitter.start()
+    end,
 })
 
 -- Transparent background (use terminal colors, not nvim's own bg)

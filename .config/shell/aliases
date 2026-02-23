@@ -16,8 +16,8 @@ alias cld='claude --dangerously-skip-permissions'
 alias cod='codex --full-auto'
 
 # Vaults (only if paths are set)
-[ -n "$LAB_VAULT" ]  && alias ol='cd "$LAB_VAULT"'
-[ -n "$LIFE_VAULT" ] && alias on='cd "$LIFE_VAULT"'
+[ -n "$LAB_VAULT" ]  && alias ola='cd "$LAB_VAULT"'
+[ -n "$LIFE_VAULT" ] && alias oli='cd "$LIFE_VAULT"'
 [ -n "$LIFE_VAULT" ] && alias od='obs-daily'
 
 # Open vault in Obsidian app

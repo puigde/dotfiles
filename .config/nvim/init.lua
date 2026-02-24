@@ -4,11 +4,12 @@ local function get_theme()
     if f then
         local theme = f:read("*l")
         f:close()
-        if theme == "dark" then return "dark" end
+        if theme == "light" then return "light" end
     end
-    return "dark"  -- default to dark (most terminals)
+    return "dark"
 end
-vim.o.background = get_theme()
+local current_theme = get_theme()
+vim.o.background = current_theme
 
 -- Transparent background: re-apply after any colorscheme loads
 vim.api.nvim_create_autocmd("ColorScheme", {

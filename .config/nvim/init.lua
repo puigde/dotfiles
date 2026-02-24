@@ -1,22 +1,15 @@
--- Read theme from state file
-local function get_theme()
-    local f = io.open(os.getenv("HOME") .. "/.local/state/theme", "r")
-    if f then
-        local theme = f:read("*l")
-        f:close()
-        if theme == "light" then return "light" end
-    end
-    return "dark"
-end
-local current_theme = get_theme()
-vim.o.background = current_theme
+-- Let Neovim auto-detect light/dark via OSC 11 terminal query
+-- (works through SSH — Ghostty responds to the escape sequence)
 
--- Transparent background: re-apply after any colorscheme loads
-vim.api.nvim_create_autocmd("ColorScheme", {
-    callback = function()
-        vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
-        vim.api.nvim_set_hl(0, "NonText", { bg = "NONE", ctermbg = "NONE" })
-    end,
+-- Transparent background: use terminal bg, not colorscheme bg
+local function clear_bg()
+    vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
+    vim.api.nvim_set_hl(0, "NonText", { bg = "NONE", ctermbg = "NONE" })
+end
+vim.api.nvim_create_autocmd("ColorScheme", { callback = clear_bg })
+vim.api.nvim_create_autocmd("OptionSet", {
+    pattern = "background",
+    callback = function() vim.schedule(clear_bg) end,
 })
 
 -- Options

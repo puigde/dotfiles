@@ -1,3 +1,21 @@
+# clab: claude with full lab vault access, skip permissions
+# Usage: clab [extra claude args...]
+clab() {
+    local lab="${LAB_VAULT:-$HOME/docs/lab}"
+    claude --dangerously-skip-permissions \
+        --add-dir "$lab" \
+        "$@"
+}
+
+# crlab: claude with full lab vault access, skip permissions, remote control
+# Usage: crlab [extra claude args...]
+crlab() {
+    local lab="${LAB_VAULT:-$HOME/docs/lab}"
+    claude remote-control --dangerously-skip-permissions \
+        --add-dir "$lab" \
+        "$@"
+}
+
 # gpm: quick add-commit-push (safer version)
 # Requires a commit message. Uses current branch, not hardcoded main.
 gpm() {

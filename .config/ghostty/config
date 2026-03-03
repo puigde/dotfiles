@@ -1,6 +1,6 @@
-foreground = #cdd6f4
-background = #1e1e2e
+foreground = #000000
+background = #F0EEE4
 background-opacity = 0.95
 
 # Shift+Enter → ESC CR (what Claude Code expects for newline insertion)
-keybind = shift+enter=text:\x1b\r
+keybind = shift+enter=text:

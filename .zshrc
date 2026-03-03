@@ -16,3 +16,13 @@ HISTFILE="${HOME}/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
 setopt HIST_IGNORE_DUPS HIST_IGNORE_SPACE SHARE_HISTORY
+
+# opencode
+export PATH=/Users/puigde-epfl/.opencode/bin:$PATH
+
+# bun completions
+[ -s "/Users/puigde-epfl/.bun/_bun" ] && source "/Users/puigde-epfl/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

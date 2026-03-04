@@ -84,8 +84,14 @@ remarimo() {
     local project="${2:+~/${2}}"
     local dir="${project:-~}"
     local port="${3:-8080}"
-    ssh -L "${port}:localhost:${port}" "$host" -t \
-        "tmux new-session -A -s marimo \"export PATH=\\\$HOME/.local/bin:\\\$PATH; cd ${dir} && uv run marimo edit notebook.py --watch --no-token --port ${port}\""
+    local mcmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && uv run marimo edit notebook.py --watch --no-token --port ${port}"
+    ssh -L "${port}:localhost:${port}" "${host}" -t \
+        "export PATH=\$HOME/.local/bin:\$PATH; \
+         tmux new-session -d -s marimo 2>/dev/null; \
+         tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null; \
+         tmux list-windows -t marimo -F '#W' | grep -q '^marimo\$' || \
+         { tmux new-window -t marimo -n marimo && tmux send-keys -t marimo:marimo '${mcmd}' Enter; }; \
+         tmux select-window -t marimo:marimo && tmux attach -t marimo"
 }
 
 # mc: copy stdin to local clipboard via OSC 52 (works over SSH + tmux)

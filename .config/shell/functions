@@ -77,6 +77,18 @@ og() {
     rg --type md "$1" "$vault_path"
 }
 
+# remarimo: persistent remote marimo session via tmux + SSH port forwarding
+# Usage: remarimo <hostname> [project_dir] [port]
+remarimo() {
+    local host="${1:?Usage: remarimo <hostname> [project_dir] [port]}"
+    local dir="${2:-\$(pwd)}"
+    local port="${3:-8080}"
+    ssh -L "${port}:localhost:${port}" "$host" -t \
+        "tmux has-session -t marimo 2>/dev/null || \
+         tmux new-session -d -s marimo \"cd ${dir} && uv run marimo edit notebook.py --watch --no-token --port ${port}\"; \
+         exec bash -l"
+}
+
 # mc: copy stdin to local clipboard via OSC 52 (works over SSH + tmux)
 mc() {
     local input

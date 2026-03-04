@@ -84,13 +84,19 @@ remarimo() {
     local project="${2:+~/${2}}"
     local dir="${project:-~}"
     local port="${3:-8080}"
-    local mcmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && uv run marimo edit notebook.py --watch --no-token --port ${port}"
+    local mcmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && lsof -ti:${port} | xargs kill 2>/dev/null; uv run marimo edit notebook.py --watch --no-token --port ${port}"
+    local ccmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && claude --dangerously-skip-permissions"
     ssh -L "${port}:localhost:${port}" "${host}" -t \
         "export PATH=\$HOME/.local/bin:\$PATH; \
-         tmux new-session -d -s marimo 2>/dev/null; \
+         tmux new-session -d -s marimo -n marimo 2>/dev/null; \
          tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null; \
-         tmux list-windows -t marimo -F '#W' | grep -q '^marimo\$' || \
-         { tmux new-window -t marimo -n marimo && tmux send-keys -t marimo:marimo '${mcmd}' Enter; }; \
+         tmux select-window -t marimo:marimo 2>/dev/null || tmux new-window -t marimo -n marimo; \
+         num_panes=\$(tmux list-panes -t marimo:marimo 2>/dev/null | wc -l); \
+         [ \"\$num_panes\" -lt 2 ] && \
+         { tmux send-keys -t marimo:marimo '${mcmd}' Enter && \
+           tmux split-window -t marimo:marimo -v && \
+           tmux send-keys -t marimo:marimo '${ccmd}' Enter && \
+           tmux select-pane -t marimo:marimo.top; }; \
          tmux select-window -t marimo:marimo && tmux attach -t marimo"
 }
 

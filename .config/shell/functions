@@ -81,13 +81,11 @@ og() {
 # Usage: remarimo <hostname> [project] [port]
 remarimo() {
     local host="${1:?Usage: remarimo <hostname> [project] [port]}"
-    local project="${2:+\$HOME/${2}}"
-    local dir="${project:-\$HOME}"
+    local project="${2:+~/${2}}"
+    local dir="${project:-~}"
     local port="${3:-8080}"
     ssh -L "${port}:localhost:${port}" "$host" -t \
-        "tmux has-session -t marimo 2>/dev/null || \
-         tmux new-session -d -s marimo \"cd ${dir} && uv run marimo edit notebook.py --watch --no-token --port ${port}\"; \
-         exec bash -l"
+        "tmux new-session -A -s marimo \"export PATH=\\\$HOME/.local/bin:\\\$PATH; cd ${dir} && uv run marimo edit notebook.py --watch --no-token --port ${port}\""
 }
 
 # mc: copy stdin to local clipboard via OSC 52 (works over SSH + tmux)

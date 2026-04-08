@@ -77,27 +77,68 @@ og() {
     rg --type md "$1" "$vault_path"
 }
 
-# remarimo: persistent remote marimo session via tmux + SSH port forwarding
-# Usage: remarimo <hostname> [project] [port]
+# remarimo: persistent remote marimo sessions via tmux + SSH port forwarding
+# Each project gets its own tmux session (marimo-<name>) and port (8080+i)
+# Usage: remarimo <hostname> [project]
 remarimo() {
-    local host="${1:?Usage: remarimo <hostname> [project] [port]}"
-    local project="${2:+~/${2}}"
-    local dir="${project:-~}"
-    local port="${3:-8080}"
-    local mcmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && lsof -ti:${port} | xargs kill 2>/dev/null; uv run marimo edit notebook.py --watch --no-token --port ${port}"
+    local host="${1:?Usage: remarimo <hostname> [project]}"
+    local project="${2:-home}"
+
+    # Validate: allow path chars [a-zA-Z0-9_/.-]
+    if [[ "$project" =~ [^a-zA-Z0-9_./-] ]]; then
+        echo "remarimo: project path must contain only [a-zA-Z0-9_/.-]" >&2
+        return 1
+    fi
+
+    # Sanitize for tmux session name (no . or / allowed)
+    local wname="${project//[\/.]/-}"
+    local session="marimo-${wname}"
+    local dir="${2:+\$HOME/${2}}"
+    dir="${dir:-\$HOME}"
+
+    # Step 1: Quick SSH to determine port
+    #   Existing session → read stored PORT env var
+    #   New session → 8080 + number of existing marimo-* sessions
+    local port
+    port=$(ssh "${host}" \
+        "export PATH=\$HOME/.local/bin:\$PATH; \
+         if tmux has-session -t '${session}' 2>/dev/null; then \
+             tmux show-environment -t '${session}' 2>/dev/null | grep '^PORT=' | cut -d= -f2; \
+         else \
+             count=\$(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^marimo-'); \
+             echo \$(( 8080 + \${count:-0} )); \
+         fi")
+
+    # Validate result is a port number
+    if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+        echo "remarimo: failed to determine port (got: '${port}')" >&2
+        return 1
+    fi
+
+    # Check local port is free
+    if lsof -ti:"${port}" >/dev/null 2>&1; then
+        echo "remarimo: local port ${port} already in use" >&2
+        return 1
+    fi
+
+    # Step 2: SSH with port forwarding, create or attach to session
+    local mcmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && lsof -ti:${port} | xargs -r kill 2>/dev/null; uv run marimo edit notebook.py --watch --no-token --port ${port}"
     local ccmd="export PATH=\$HOME/.local/bin:\$PATH; cd ${dir} && claude --dangerously-skip-permissions"
+
     ssh -L "${port}:localhost:${port}" "${host}" -t \
         "export PATH=\$HOME/.local/bin:\$PATH; \
-         tmux new-session -d -s marimo -n marimo 2>/dev/null; \
-         tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null; \
-         tmux select-window -t marimo:marimo 2>/dev/null || tmux new-window -t marimo -n marimo; \
-         num_panes=\$(tmux list-panes -t marimo:marimo 2>/dev/null | wc -l); \
-         [ \"\$num_panes\" -lt 2 ] && \
-         { tmux send-keys -t marimo:marimo '${mcmd}' Enter && \
-           tmux split-window -t marimo:marimo -v && \
-           tmux send-keys -t marimo:marimo '${ccmd}' Enter && \
-           tmux select-pane -t marimo:marimo.top; }; \
-         tmux select-window -t marimo:marimo && tmux attach -t marimo"
+         if tmux has-session -t '${session}' 2>/dev/null; then \
+             tmux attach -t '${session}'; \
+         else \
+             tmux new-session -d -s '${session}' -n marimo; \
+             tmux set-environment -t '${session}' PORT '${port}'; \
+             tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null; \
+             tmux send-keys -t '${session}':marimo '${mcmd}' Enter; \
+             tmux split-window -t '${session}':marimo -v; \
+             tmux send-keys -t '${session}':marimo '${ccmd}' Enter; \
+             tmux select-pane -t '${session}':marimo.0; \
+             tmux attach -t '${session}'; \
+         fi"
 }
 
 # mc: copy stdin to local clipboard via OSC 52 (works over SSH + tmux)

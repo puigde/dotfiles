@@ -126,6 +126,12 @@ require("lazy").setup({
     },
     -- Completion engine (required for obsidian.nvim [[search)
     { "hrsh7th/nvim-cmp" },
+    -- Render Markdown (inline preview in terminal)
+    {
+        "MeanderingProgrammer/render-markdown.nvim",
+        dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
+        opts = {},
+    },
     -- Lualine
     {
         "nvim-lualine/lualine.nvim",

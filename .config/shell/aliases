@@ -1,6 +1,7 @@
 # Editor
 command -v nvim >/dev/null && alias vim="nvim"
 alias v='${EDITOR:-vim}'
+alias tvim="nvim -c 'set tabstop=2 shiftwidth=2 expandtab'"
 
 # Git
 alias gs='git status'
@@ -14,6 +15,10 @@ alias glog='git log --oneline --graph --decorate'
 # AI
 alias cld='claude --dangerously-skip-permissions'
 alias cod='codex --full-auto'
+
+# Utils
+alias envload='export $(cat .env | xargs)'
+alias pi='envload && command pi'
 
 # Vaults (only if paths are set)
 [ -n "$LAB_VAULT" ]  && alias ola='cd "$LAB_VAULT"'

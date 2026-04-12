@@ -11,9 +11,10 @@ if [ "$OS" = "Darwin" ]; then
         echo "Homebrew not found. Install it first: https://brew.sh"
         exit 1
     fi
-    brew install stow fzf ruby ripgrep nvim tmux </dev/null
+    brew install stow fzf ruby ripgrep nvim tmux bitwarden-cli </dev/null
 elif [ "$OS" = "Linux" ]; then
-    sudo apt install -y stow fzf ripgrep neovim tmux </dev/null
+    sudo apt install -y stow fzf ripgrep neovim tmux npm </dev/null
+    npm install -g @bitwarden/cli </dev/null
 else
     echo "Unsupported OS: $OS"
     exit 1
@@ -48,13 +49,30 @@ elif [ -d "$HOME/Documents/life" ]; then
     echo "export LIFE_VAULT=\"\$HOME/Documents/life\"" >> "$HOME/.dotfiles.local"
 fi
 
+# Pi auth (Bitwarden-backed API keys — no secrets, just commands)
+mkdir -p "$HOME/.pi/agent"
+cat > "$HOME/.pi/agent/auth.json" << 'EOF'
+{
+  "openai": { "type": "api_key", "key": "!bw get password OPENAI_API_KEY" }
+}
+EOF
+chmod 600 "$HOME/.pi/agent/auth.json"
+
 # Backup existing conflicting files
 BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%Y%m%d)"
 backup() {
+    # Skip if file doesn't exist, is a symlink, or is inside a symlinked parent (stow-managed)
     if [ -e "$1" ] && [ ! -L "$1" ]; then
-        mkdir -p "$BACKUP_DIR"
-        echo "Backing up $1 → $BACKUP_DIR/"
-        mv "$1" "$BACKUP_DIR/"
+        local dir="$1"
+        local inside_symlink=false
+        while dir="$(dirname "$dir")" && [ "$dir" != "$HOME" ] && [ "$dir" != "/" ]; do
+            if [ -L "$dir" ]; then inside_symlink=true; break; fi
+        done
+        if [ "$inside_symlink" = false ]; then
+            mkdir -p "$BACKUP_DIR"
+            echo "Backing up $1 → $BACKUP_DIR/"
+            mv "$1" "$BACKUP_DIR/"
+        fi
     fi
 }
 

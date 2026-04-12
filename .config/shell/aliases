@@ -14,11 +14,7 @@ alias glog='git log --oneline --graph --decorate'
 
 # AI
 alias cld='claude --dangerously-skip-permissions'
-alias cod='codex --full-auto'
-
-# Utils
-alias envload='export $(cat .env | xargs)'
-alias pi='envload && command pi'
+alias cod='OPENAI_API_KEY=$(bw get password OPENAI_API_KEY) codex --full-auto'
 
 # Vaults (only if paths are set)
 [ -n "$LAB_VAULT" ]  && alias ola='cd "$LAB_VAULT"'

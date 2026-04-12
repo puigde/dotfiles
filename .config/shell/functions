@@ -141,6 +141,17 @@ remarimo() {
          fi"
 }
 
+# bwunlock: unlock Bitwarden vault for current shell session
+bwunlock() {
+    export BW_SESSION=$(bw unlock --raw)
+}
+
+# bwlock: lock vault and clear session
+bwlock() {
+    bw lock
+    unset BW_SESSION
+}
+
 # mc: copy stdin to local clipboard via OSC 52 (works over SSH + tmux)
 mc() {
     local input

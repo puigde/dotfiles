@@ -78,7 +78,7 @@ require("lazy").setup({
     -- Telescope
     {
         "nvim-telescope/telescope.nvim",
-        tag = "0.1.8",
+        branch = "master",
         dependencies = { "nvim-lua/plenary.nvim" },
         keys = {
             { "<leader>ff", function() require("telescope.builtin").find_files() end, desc = "Find files" },

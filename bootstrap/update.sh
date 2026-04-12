@@ -9,5 +9,5 @@ fi
 
 git pull
 stow -R . -t ~
-nvim --headless "+Lazy! update" +qa
+command -v nvim >/dev/null 2>&1 && nvim --headless "+Lazy! update" +qa
 echo "Dotfiles updated!"

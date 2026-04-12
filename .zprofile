@@ -1,5 +1,5 @@
 # Login shell setup
 [ -f "$HOME/.config/shell/profile" ] && . "$HOME/.config/shell/profile"
 
-# Added by Obsidian
-export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
+# Obsidian CLI (macOS only)
+[ -d "/Applications/Obsidian.app" ] && export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"

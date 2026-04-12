@@ -1,5 +1,5 @@
-foreground = #000000
-background = #ffffff
+foreground = #ffffff
+background = #000000
 background-opacity = 0.95
 
 # Shift+Enter → ESC CR (what Claude Code expects for newline insertion)

@@ -101,8 +101,20 @@ if [ "$install_nvim" = true ]; then
         tmp=$(mktemp -d)
         fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.appimage" "$tmp/nvim.appimage"
         chmod +x "$tmp/nvim.appimage"
-        ( cd "$tmp" && ./nvim.appimage --appimage-extract >/dev/null )
-        mv "$tmp/squashfs-root" "$LOCAL/nvim"
+        # Try self-extract first; if runtime segfaults on old glibc, extract squashfs manually
+        if ( cd "$tmp" && ./nvim.appimage --appimage-extract >/dev/null 2>&1 ); then
+            mv "$tmp/squashfs-root" "$LOCAL/nvim"
+        elif command -v unsquashfs >/dev/null 2>&1; then
+            echo "  AppImage runtime failed, extracting squashfs manually..."
+            offset=$(grep -boa 'hsqs' "$tmp/nvim.appimage" | head -1 | cut -d: -f1)
+            tail -c +$((offset + 1)) "$tmp/nvim.appimage" > "$tmp/nvim.squashfs"
+            unsquashfs -d "$LOCAL/nvim" "$tmp/nvim.squashfs" >/dev/null
+        else
+            rm -rf "$tmp"
+            echo "Error: AppImage can't self-extract (old glibc) and unsquashfs not found."
+            echo "  Install squashfs-tools: sudo yum install squashfs-tools"
+            exit 1
+        fi
         rm -rf "$tmp"
         ln -sf "$LOCAL/nvim/AppRun" "$BIN/nvim"
     else

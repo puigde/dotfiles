@@ -96,27 +96,14 @@ if [ "$install_nvim" = true ]; then
     # Clear stale plugin cache — old plugins break across major nvim versions
     rm -rf "$HOME/.local/share/nvim/lazy" "$HOME/.local/state/nvim/lazy"
     if [ "$OS" = "Linux" ]; then
-        # AppImage bundles its own libs — works on old glibc
-        # Symlink to AppRun (not usr/bin/nvim) so bundled LD paths are set up
+        # Prebuilt binaries need glibc 2.34+; build from source for portability
+        # Requires: git, cmake, make, gcc, g++
         tmp=$(mktemp -d)
-        fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.appimage" "$tmp/nvim.appimage"
-        chmod +x "$tmp/nvim.appimage"
-        # Try self-extract first; if runtime segfaults on old glibc, extract squashfs manually
-        if ( cd "$tmp" && ./nvim.appimage --appimage-extract >/dev/null 2>&1 ); then
-            mv "$tmp/squashfs-root" "$LOCAL/nvim"
-        elif command -v unsquashfs >/dev/null 2>&1; then
-            echo "  AppImage runtime failed, extracting squashfs manually..."
-            offset=$(grep -boa 'hsqs' "$tmp/nvim.appimage" | head -1 | cut -d: -f1)
-            tail -c +$((offset + 1)) "$tmp/nvim.appimage" > "$tmp/nvim.squashfs"
-            unsquashfs -d "$LOCAL/nvim" "$tmp/nvim.squashfs" >/dev/null
-        else
-            rm -rf "$tmp"
-            echo "Error: AppImage can't self-extract (old glibc) and unsquashfs not found."
-            echo "  Install squashfs-tools: sudo yum install squashfs-tools"
-            exit 1
-        fi
+        git clone --depth 1 --branch stable https://github.com/neovim/neovim.git "$tmp/neovim"
+        make -C "$tmp/neovim" CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="$LOCAL/nvim" -j"$(nproc 2>/dev/null || echo 2)"
+        make -C "$tmp/neovim" CMAKE_INSTALL_PREFIX="$LOCAL/nvim" install
         rm -rf "$tmp"
-        ln -sf "$LOCAL/nvim/AppRun" "$BIN/nvim"
+        ln -sf "$LOCAL/nvim/bin/nvim" "$BIN/nvim"
     else
         ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
           fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.tar.gz" "$tmp/nvim.tar.gz"

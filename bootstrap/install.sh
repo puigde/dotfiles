@@ -221,7 +221,8 @@ fi
 # tree-sitter — needed by nvim-treesitter to compile parsers
 if ! command -v tree-sitter >/dev/null 2>&1; then
     echo "Installing tree-sitter-cli..."
-    cargo install tree-sitter-cli
+    # C_INCLUDE_PATH fixes broken clang include paths on RHEL/CentOS
+    C_INCLUDE_PATH="$(gcc -print-file-name=include)" cargo install tree-sitter-cli
     echo "  → tree-sitter $(tree-sitter --version)"
 fi
 

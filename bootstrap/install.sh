@@ -18,6 +18,7 @@ FZF_VERSION="0.71.0"
 RG_VERSION="15.1.0"
 NODE_VERSION="22.15.0"
 NVIM_MIN_VERSION="0.10.0"
+NODE_MIN_VERSION="18.0.0"
 TRY_VERSION="1.5.3"
 
 # --- Platform ---
@@ -149,8 +150,19 @@ else
 fi
 
 # node — prebuilt tarball to ~/.local/node, symlinked into bin
+install_node=false
 if ! command -v node >/dev/null 2>&1; then
+    install_node=true
+else
+    node_ver="$(node --version | sed 's/^v//')"
+    if ! version_ge "$node_ver" "$NODE_MIN_VERSION"; then
+        echo "node $node_ver found but ${NODE_MIN_VERSION}+ required"
+        install_node=true
+    fi
+fi
+if [ "$install_node" = true ]; then
     echo "Installing node ${NODE_VERSION}..."
+    rm -rf "$LOCAL/node"
     ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
       fetch "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${node_platform}.tar.gz" "$tmp/node.tar.gz"
       mkdir -p "$LOCAL/node"
@@ -158,7 +170,7 @@ if ! command -v node >/dev/null 2>&1; then
     ln -sf "$LOCAL/node/bin/node" "$BIN/node"
     ln -sf "$LOCAL/node/bin/npm" "$BIN/npm"
     ln -sf "$LOCAL/node/bin/npx" "$BIN/npx"
-    echo "  → node $(node --version)"
+    echo "  → node $("$BIN/node" --version)"
 fi
 
 # claude-code — standalone installer (no Node required)
@@ -170,16 +182,16 @@ if ! command -v claude >/dev/null 2>&1; then
     echo "  → claude"
 fi
 
-# codex — npm global
+# codex — npm global (--prefix ensures binaries go to ~/.local/bin)
 if ! command -v codex >/dev/null 2>&1; then
     echo "Installing codex..."
-    npm install -g @openai/codex
+    "$BIN/npm" install -g --prefix="$LOCAL" @openai/codex
 fi
 
 # pi — npm global
 if ! command -v pi >/dev/null 2>&1; then
     echo "Installing pi..."
-    npm install -g @mariozechner/pi-coding-agent
+    "$BIN/npm" install -g --prefix="$LOCAL" @mariozechner/pi-coding-agent
 fi
 
 # try-cli — prebuilt binary, fallback to build from source

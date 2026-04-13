@@ -64,8 +64,7 @@ if ! command -v fzf >/dev/null 2>&1; then
     echo "Installing fzf ${FZF_VERSION}..."
     ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
       fetch "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-${fzf_arch}.tar.gz" "$tmp/fzf.tar.gz"
-      tar xzf "$tmp/fzf.tar.gz" -C "$BIN"
-    ) || { echo "  Warning: fzf install failed, skipping"; }
+      tar xzf "$tmp/fzf.tar.gz" -C "$BIN" )
     echo "  → fzf ${FZF_VERSION}"
 fi
 
@@ -75,12 +74,11 @@ if ! command -v rg >/dev/null 2>&1; then
     ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
       fetch "https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}/ripgrep-${RG_VERSION}-${rg_target}.tar.gz" "$tmp/rg.tar.gz"
       tar xzf "$tmp/rg.tar.gz" -C "$tmp"
-      cp "$tmp"/ripgrep-*/rg "$BIN/"
-    ) || { echo "  Warning: ripgrep install failed, skipping"; }
+      cp "$tmp"/ripgrep-*/rg "$BIN/" )
     echo "  → ripgrep ${RG_VERSION}"
 fi
 
-# neovim — isolated prefix at ~/.local/nvim, symlinked into bin
+# neovim — AppImage on Linux (portable, no glibc issues), tarball on macOS
 install_nvim=false
 if ! command -v nvim >/dev/null 2>&1; then
     install_nvim=true
@@ -93,13 +91,26 @@ else
 fi
 if [ "$install_nvim" = true ]; then
     echo "Installing neovim (latest stable)..."
-    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
-      fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.tar.gz" "$tmp/nvim.tar.gz"
-      rm -rf "$LOCAL/nvim"
-      mkdir -p "$LOCAL/nvim"
-      tar xzf "$tmp/nvim.tar.gz" -C "$LOCAL/nvim" --strip-components=1 )
-    ln -sf "$LOCAL/nvim/bin/nvim" "$BIN/nvim"
-    echo "  → nvim $(nvim --version | head -n 1)"
+    rm -rf "$LOCAL/nvim"
+    if [ "$OS" = "Linux" ]; then
+        # AppImage bundles its own libs — works on old glibc
+        tmp=$(mktemp -d)
+        fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.appimage" "$tmp/nvim.appimage"
+        chmod +x "$tmp/nvim.appimage"
+        ( cd "$tmp" && ./nvim.appimage --appimage-extract >/dev/null )
+        mv "$tmp/squashfs-root" "$LOCAL/nvim"
+        rm -rf "$tmp"
+        ln -sf "$LOCAL/nvim/usr/bin/nvim" "$BIN/nvim"
+    else
+        ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+          fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.tar.gz" "$tmp/nvim.tar.gz"
+          mkdir -p "$LOCAL/nvim"
+          tar xzf "$tmp/nvim.tar.gz" -C "$LOCAL/nvim" --strip-components=1 )
+        ln -sf "$LOCAL/nvim/bin/nvim" "$BIN/nvim"
+    fi
+    # Verify it actually runs
+    "$BIN/nvim" --version | head -n 1
+    echo "  → nvim installed"
 fi
 
 # bitwarden-cli — single binary in a zip
@@ -117,8 +128,8 @@ if ! command -v bw >/dev/null 2>&1; then
       fi
       cp "$tmp/bw-out/bw" "$BIN/"
       chmod +x "$BIN/bw"
-    ) || { echo "  Warning: bitwarden-cli install failed, skipping"; }
-    [ -x "$BIN/bw" ] && echo "  → bw"
+    )
+    echo "  → bw"
 fi
 
 # tmux — needs system libraries, just advise
@@ -152,20 +163,20 @@ if ! command -v claude >/dev/null 2>&1; then
     echo "Installing claude-code..."
     ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
       fetch "https://claude.ai/install.sh" "$tmp/install.sh"
-      bash "$tmp/install.sh" ) || { echo "  Warning: claude-code install failed, skipping"; }
-    command -v claude >/dev/null 2>&1 && echo "  → claude $(claude --version 2>/dev/null || echo '(installed)')"
+      bash "$tmp/install.sh" )
+    echo "  → claude"
 fi
 
 # codex — npm global
 if ! command -v codex >/dev/null 2>&1; then
     echo "Installing codex..."
-    npm install -g @openai/codex 2>/dev/null || { echo "  Warning: codex install failed, skipping"; }
+    npm install -g @openai/codex
 fi
 
 # pi — npm global
 if ! command -v pi >/dev/null 2>&1; then
     echo "Installing pi..."
-    npm install -g @mariozechner/pi-coding-agent 2>/dev/null || { echo "  Warning: pi install failed, skipping"; }
+    npm install -g @mariozechner/pi-coding-agent
 fi
 
 # Ruby/try-cli (macOS only, needs Homebrew Ruby)
@@ -255,6 +266,7 @@ stow .
 
 # Skip local-only changes for machine-specific configs
 git -C "$DOTFILES_DIR" update-index --skip-worktree .config/ghostty/config
+git -C "$DOTFILES_DIR" update-index --skip-worktree .config/nvim/lazy-lock.json
 
 echo "Dotfiles installed!"
 

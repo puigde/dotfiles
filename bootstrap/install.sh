@@ -207,6 +207,22 @@ if ! command -v pi >/dev/null 2>&1; then
     "$BIN/npm" install -g --prefix="$LOCAL" @mariozechner/pi-coding-agent
 fi
 
+# rust — needed for tree-sitter-cli
+if ! command -v cargo >/dev/null 2>&1; then
+    echo "Installing rust (rustup)..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+    export PATH="$HOME/.cargo/bin:$PATH"
+    echo "  → rust $(rustc --version)"
+fi
+
+# tree-sitter — needed by nvim-treesitter to compile parsers
+if ! command -v tree-sitter >/dev/null 2>&1; then
+    echo "Installing tree-sitter-cli..."
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cargo install tree-sitter-cli
+    echo "  → tree-sitter $(tree-sitter --version)"
+fi
+
 # try-cli — build from source (prebuilt binaries are Nix-linked, not portable)
 if ! command -v try >/dev/null 2>&1; then
     echo "Installing try-cli ${TRY_VERSION}..."

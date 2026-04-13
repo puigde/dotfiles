@@ -93,6 +93,8 @@ fi
 if [ "$install_nvim" = true ]; then
     echo "Installing neovim (latest stable)..."
     rm -rf "$LOCAL/nvim"
+    # Clear stale plugin cache — old plugins break across major nvim versions
+    rm -rf "$HOME/.local/share/nvim/lazy" "$HOME/.local/state/nvim/lazy"
     if [ "$OS" = "Linux" ]; then
         # AppImage bundles its own libs — works on old glibc
         # Symlink to AppRun (not usr/bin/nvim) so bundled LD paths are set up

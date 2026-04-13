@@ -16,13 +16,14 @@ case ":$PATH:" in *":$BIN:"*) ;; *) export PATH="$BIN:$PATH" ;; esac
 STOW_VERSION="2.4.1"
 FZF_VERSION="0.71.0"
 RG_VERSION="15.1.0"
+NODE_VERSION="22.15.0"
 
 # --- Platform ---
 case "$OS/$ARCH" in
-    Linux/x86_64)  fzf_arch="linux_amd64"  rg_target="x86_64-unknown-linux-musl"  nvim_platform="linux-x86_64"  bw_platform="linux"  ;;
-    Linux/aarch64) fzf_arch="linux_arm64"   rg_target="aarch64-unknown-linux-gnu"  nvim_platform="linux-arm64"   bw_platform="linux"  ;;
-    Darwin/x86_64) fzf_arch="darwin_amd64"  rg_target="x86_64-apple-darwin"        nvim_platform="macos-x86_64"  bw_platform="macos"  ;;
-    Darwin/arm64)  fzf_arch="darwin_arm64"  rg_target="aarch64-apple-darwin"       nvim_platform="macos-arm64"   bw_platform="macos"  ;;
+    Linux/x86_64)  fzf_arch="linux_amd64"  rg_target="x86_64-unknown-linux-musl"  nvim_platform="linux-x86_64"  bw_platform="linux"  node_platform="linux-x64"   ;;
+    Linux/aarch64) fzf_arch="linux_arm64"   rg_target="aarch64-unknown-linux-gnu"  nvim_platform="linux-arm64"   bw_platform="linux"  node_platform="linux-arm64" ;;
+    Darwin/x86_64) fzf_arch="darwin_amd64"  rg_target="x86_64-apple-darwin"        nvim_platform="macos-x86_64"  bw_platform="macos"  node_platform="darwin-x64"  ;;
+    Darwin/arm64)  fzf_arch="darwin_arm64"  rg_target="aarch64-apple-darwin"       nvim_platform="macos-arm64"   bw_platform="macos"  node_platform="darwin-arm64" ;;
     *) echo "Unsupported: $OS/$ARCH"; exit 1 ;;
 esac
 
@@ -114,6 +115,40 @@ if ! command -v tmux >/dev/null 2>&1; then
     fi
 else
     echo "tmux $(tmux -V) found — 3.2+ recommended for full config support."
+fi
+
+# node — prebuilt tarball to ~/.local/node, symlinked into bin
+if ! command -v node >/dev/null 2>&1; then
+    echo "Installing node ${NODE_VERSION}..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${node_platform}.tar.gz" "$tmp/node.tar.gz"
+      mkdir -p "$LOCAL/node"
+      tar xzf "$tmp/node.tar.gz" -C "$LOCAL/node" --strip-components=1 )
+    ln -sf "$LOCAL/node/bin/node" "$BIN/node"
+    ln -sf "$LOCAL/node/bin/npm" "$BIN/npm"
+    ln -sf "$LOCAL/node/bin/npx" "$BIN/npx"
+    echo "  → node $(node --version)"
+fi
+
+# claude-code — standalone installer (no Node required)
+if ! command -v claude >/dev/null 2>&1; then
+    echo "Installing claude-code..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://claude.ai/install.sh" "$tmp/install.sh"
+      bash "$tmp/install.sh" ) || { echo "  Warning: claude-code install failed, skipping"; }
+    command -v claude >/dev/null 2>&1 && echo "  → claude $(claude --version 2>/dev/null || echo '(installed)')"
+fi
+
+# codex — npm global
+if ! command -v codex >/dev/null 2>&1; then
+    echo "Installing codex..."
+    npm install -g @openai/codex 2>/dev/null || { echo "  Warning: codex install failed, skipping"; }
+fi
+
+# pi — npm global
+if ! command -v pi >/dev/null 2>&1; then
+    echo "Installing pi..."
+    npm install -g @mariozechner/pi-coding-agent 2>/dev/null || { echo "  Warning: pi install failed, skipping"; }
 fi
 
 # Ruby/try-cli (macOS only, needs Homebrew Ruby)

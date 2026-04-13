@@ -58,20 +58,23 @@ require("lazy").setup({
         build = ":TSUpdate",
         config = function()
             require("nvim-treesitter").setup({})
-            -- Install parsers if missing
-            local wanted = { "markdown", "markdown_inline", "latex", "python", "rust",
-                             "c", "cpp", "lua", "bash", "json", "yaml", "toml" }
-            local installed = require("nvim-treesitter").get_installed()
-            local installed_set = {}
-            for _, lang in ipairs(installed) do installed_set[lang] = true end
-            local missing = {}
-            for _, lang in ipairs(wanted) do
-                if not installed_set[lang] then table.insert(missing, lang) end
-            end
-            if #missing > 0 then
-                vim.schedule(function()
-                    require("nvim-treesitter").install(missing)
-                end)
+            -- Install extra parsers if tree-sitter CLI is available
+            -- (bundled parsers like c, lua, markdown, vim work without it)
+            if vim.fn.executable("tree-sitter") == 1 then
+                local wanted = { "markdown", "markdown_inline", "latex", "python", "rust",
+                                 "c", "cpp", "lua", "bash", "json", "yaml", "toml" }
+                local installed = require("nvim-treesitter").get_installed()
+                local installed_set = {}
+                for _, lang in ipairs(installed) do installed_set[lang] = true end
+                local missing = {}
+                for _, lang in ipairs(wanted) do
+                    if not installed_set[lang] then table.insert(missing, lang) end
+                end
+                if #missing > 0 then
+                    vim.schedule(function()
+                        require("nvim-treesitter").install(missing)
+                    end)
+                end
             end
         end,
     },

@@ -17,6 +17,7 @@ STOW_VERSION="2.4.1"
 FZF_VERSION="0.71.0"
 RG_VERSION="15.1.0"
 NODE_VERSION="22.15.0"
+CMAKE_VERSION="3.31.6"
 NVIM_MIN_VERSION="0.10.0"
 NODE_MIN_VERSION="18.0.0"
 TRY_VERSION="1.5.3"
@@ -80,7 +81,19 @@ if ! command -v rg >/dev/null 2>&1; then
     echo "  → ripgrep ${RG_VERSION}"
 fi
 
-# neovim — AppImage on Linux (portable, no glibc issues), tarball on macOS
+# cmake — prebuilt binary, needed for building neovim on Linux
+if [ "$OS" = "Linux" ] && ! command -v cmake >/dev/null 2>&1; then
+    echo "Installing cmake ${CMAKE_VERSION}..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.tar.gz" "$tmp/cmake.tar.gz"
+      rm -rf "$LOCAL/cmake"
+      mkdir -p "$LOCAL/cmake"
+      tar xzf "$tmp/cmake.tar.gz" -C "$LOCAL/cmake" --strip-components=1 )
+    ln -sf "$LOCAL/cmake/bin/cmake" "$BIN/cmake"
+    echo "  → cmake ${CMAKE_VERSION}"
+fi
+
+# neovim — build from source on Linux (prebuilt binaries need glibc 2.34+), tarball on macOS
 install_nvim=false
 if ! command -v nvim >/dev/null 2>&1; then
     install_nvim=true

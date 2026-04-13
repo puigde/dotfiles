@@ -185,11 +185,7 @@ if [ "$(uname)" = "Darwin" ]; then
     alias ct='changetheme'
 fi
 
-# try (run try.rb directly — gem wrapper breaks __FILE__ == $0 guard)
-# macOS/Homebrew only; uses [ -f ] check which works in both bash and zsh
-if [ -d /opt/homebrew/lib/ruby ]; then
-    for _f in /opt/homebrew/lib/ruby/gems/*/gems/try-cli-*/try.rb; do
-        [ -f "$_f" ] && eval "$(/opt/homebrew/opt/ruby/bin/ruby "$_f" init "$HOME/src/tries")" && break
-    done
-    unset _f
+# try — fresh directories for experiments (tobi/try-cli)
+if command -v try >/dev/null 2>&1; then
+    eval "$(try init "$HOME/src/tries")"
 fi

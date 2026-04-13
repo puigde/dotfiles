@@ -21,6 +21,7 @@ CMAKE_VERSION="3.31.6"
 NVIM_MIN_VERSION="0.10.0"
 NODE_MIN_VERSION="18.0.0"
 TRY_VERSION="1.5.3"
+GLOW_VERSION="2.1.2"
 
 # --- Platform ---
 case "$OS/$ARCH" in
@@ -79,6 +80,18 @@ if ! command -v rg >/dev/null 2>&1; then
       tar xzf "$tmp/rg.tar.gz" -C "$tmp"
       cp "$tmp"/ripgrep-*/rg "$BIN/" )
     echo "  → ripgrep ${RG_VERSION}"
+fi
+
+# glow — static Go binary, works on any glibc
+if ! command -v glow >/dev/null 2>&1; then
+    glow_arch="$ARCH"; [ "$glow_arch" = "aarch64" ] && glow_arch="arm64"
+    echo "Installing glow ${GLOW_VERSION}..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_${OS}_${glow_arch}.tar.gz" "$tmp/glow.tar.gz"
+      tar xzf "$tmp/glow.tar.gz" -C "$tmp"
+      cp "$tmp"/glow_*/glow "$BIN/" || cp "$tmp/glow" "$BIN/"
+      chmod +x "$BIN/glow" )
+    echo "  → glow ${GLOW_VERSION}"
 fi
 
 # cmake — prebuilt binary, needed for building neovim on Linux

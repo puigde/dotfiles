@@ -17,6 +17,7 @@ STOW_VERSION="2.4.1"
 FZF_VERSION="0.71.0"
 RG_VERSION="15.1.0"
 NODE_VERSION="22.15.0"
+NVIM_MIN_VERSION="0.10.0"
 
 # --- Platform ---
 case "$OS/$ARCH" in
@@ -37,6 +38,11 @@ fetch() {
         echo "Error: curl or wget required" >&2
         exit 1
     fi
+}
+
+# version_ge "0.8.0" "0.10.0" → false (returns 1 if $1 < $2)
+version_ge() {
+    [ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -n 1)" = "$2" ]
 }
 
 # --- Tools (all go to ~/.local, no sudo needed) ---
@@ -75,10 +81,21 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 # neovim — isolated prefix at ~/.local/nvim, symlinked into bin
+install_nvim=false
 if ! command -v nvim >/dev/null 2>&1; then
+    install_nvim=true
+else
+    nvim_ver="$(nvim --version | head -n 1 | sed 's/[^0-9]*\([0-9][0-9.]*\).*/\1/')"
+    if ! version_ge "$nvim_ver" "$NVIM_MIN_VERSION"; then
+        echo "nvim $nvim_ver found but ${NVIM_MIN_VERSION}+ required (treesitter, etc.)"
+        install_nvim=true
+    fi
+fi
+if [ "$install_nvim" = true ]; then
     echo "Installing neovim (latest stable)..."
     ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
       fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.tar.gz" "$tmp/nvim.tar.gz"
+      rm -rf "$LOCAL/nvim"
       mkdir -p "$LOCAL/nvim"
       tar xzf "$tmp/nvim.tar.gz" -C "$LOCAL/nvim" --strip-components=1 )
     ln -sf "$LOCAL/nvim/bin/nvim" "$BIN/nvim"

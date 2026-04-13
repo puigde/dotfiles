@@ -236,6 +236,9 @@ DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$DOTFILES_DIR"
 stow .
 
+# Skip local-only changes for machine-specific configs
+git -C "$DOTFILES_DIR" update-index --skip-worktree .config/ghostty/config
+
 echo "Dotfiles installed!"
 
 # macOS-specific setup

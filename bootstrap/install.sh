@@ -23,10 +23,10 @@ TRY_VERSION="1.5.3"
 
 # --- Platform ---
 case "$OS/$ARCH" in
-    Linux/x86_64)  fzf_arch="linux_amd64"  rg_target="x86_64-unknown-linux-musl"  nvim_platform="linux-x86_64"  bw_platform="linux"  node_platform="linux-x64"   try_platform="x86_64-linux"   ;;
-    Linux/aarch64) fzf_arch="linux_arm64"   rg_target="aarch64-unknown-linux-gnu"  nvim_platform="linux-arm64"   bw_platform="linux"  node_platform="linux-arm64" try_platform="aarch64-linux"  ;;
-    Darwin/x86_64) fzf_arch="darwin_amd64"  rg_target="x86_64-apple-darwin"        nvim_platform="macos-x86_64"  bw_platform="macos"  node_platform="darwin-x64"  try_platform="darwin-x86_64"  ;;
-    Darwin/arm64)  fzf_arch="darwin_arm64"  rg_target="aarch64-apple-darwin"       nvim_platform="macos-arm64"   bw_platform="macos"  node_platform="darwin-arm64" try_platform="darwin-aarch64" ;;
+    Linux/x86_64)  fzf_arch="linux_amd64"  rg_target="x86_64-unknown-linux-musl"  nvim_platform="linux-x86_64"  bw_platform="linux"  node_platform="linux-x64"   ;;
+    Linux/aarch64) fzf_arch="linux_arm64"   rg_target="aarch64-unknown-linux-gnu"  nvim_platform="linux-arm64"   bw_platform="linux"  node_platform="linux-arm64" ;;
+    Darwin/x86_64) fzf_arch="darwin_amd64"  rg_target="x86_64-apple-darwin"        nvim_platform="macos-x86_64"  bw_platform="macos"  node_platform="darwin-x64"  ;;
+    Darwin/arm64)  fzf_arch="darwin_arm64"  rg_target="aarch64-apple-darwin"       nvim_platform="macos-arm64"   bw_platform="macos"  node_platform="darwin-arm64" ;;
     *) echo "Unsupported: $OS/$ARCH"; exit 1 ;;
 esac
 
@@ -194,20 +194,14 @@ if ! command -v pi >/dev/null 2>&1; then
     "$BIN/npm" install -g --prefix="$LOCAL" @mariozechner/pi-coding-agent
 fi
 
-# try-cli — prebuilt binary, fallback to build from source
+# try-cli — build from source (prebuilt binaries are Nix-linked, not portable)
 if ! command -v try >/dev/null 2>&1; then
     echo "Installing try-cli ${TRY_VERSION}..."
     tmp=$(mktemp -d)
-    if fetch "https://github.com/tobi/try-cli/releases/download/v${TRY_VERSION}/try-${try_platform}.tar.gz" "$tmp/try.tar.gz" 2>/dev/null; then
-        tar xzf "$tmp/try.tar.gz" -C "$tmp"
-        cp "$tmp/try" "$BIN/"
-    else
-        echo "  No prebuilt binary, building from source..."
-        fetch "https://github.com/tobi/try-cli/archive/refs/tags/v${TRY_VERSION}.tar.gz" "$tmp/try-src.tar.gz"
-        tar xzf "$tmp/try-src.tar.gz" -C "$tmp"
-        make -C "$tmp/try-cli-${TRY_VERSION}" -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
-        cp "$tmp/try-cli-${TRY_VERSION}/dist/try" "$BIN/"
-    fi
+    fetch "https://github.com/tobi/try-cli/archive/refs/tags/v${TRY_VERSION}.tar.gz" "$tmp/try-src.tar.gz"
+    tar xzf "$tmp/try-src.tar.gz" -C "$tmp"
+    make -C "$tmp/try-cli-${TRY_VERSION}" -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
+    cp "$tmp/try-cli-${TRY_VERSION}/dist/try" "$BIN/"
     chmod +x "$BIN/try"
     rm -rf "$tmp"
     echo "  → try ${TRY_VERSION}"

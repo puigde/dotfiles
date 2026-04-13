@@ -95,13 +95,14 @@ if [ "$install_nvim" = true ]; then
     rm -rf "$LOCAL/nvim"
     if [ "$OS" = "Linux" ]; then
         # AppImage bundles its own libs — works on old glibc
+        # Symlink to AppRun (not usr/bin/nvim) so bundled LD paths are set up
         tmp=$(mktemp -d)
         fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.appimage" "$tmp/nvim.appimage"
         chmod +x "$tmp/nvim.appimage"
         ( cd "$tmp" && ./nvim.appimage --appimage-extract >/dev/null )
         mv "$tmp/squashfs-root" "$LOCAL/nvim"
         rm -rf "$tmp"
-        ln -sf "$LOCAL/nvim/usr/bin/nvim" "$BIN/nvim"
+        ln -sf "$LOCAL/nvim/AppRun" "$BIN/nvim"
     else
         ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
           fetch "https://github.com/neovim/neovim/releases/latest/download/nvim-${nvim_platform}.tar.gz" "$tmp/nvim.tar.gz"
@@ -109,9 +110,9 @@ if [ "$install_nvim" = true ]; then
           tar xzf "$tmp/nvim.tar.gz" -C "$LOCAL/nvim" --strip-components=1 )
         ln -sf "$LOCAL/nvim/bin/nvim" "$BIN/nvim"
     fi
-    # Verify it actually runs
-    "$BIN/nvim" --version | head -n 1
-    echo "  → nvim installed"
+    # Verify it actually runs (no pipe — set -e catches failure)
+    "$BIN/nvim" --version > /dev/null 2>&1
+    echo "  → nvim $("$BIN/nvim" --version | head -n 1)"
 fi
 
 # bitwarden-cli — single binary in a zip

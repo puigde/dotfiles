@@ -22,13 +22,14 @@ NVIM_MIN_VERSION="0.10.0"
 NODE_MIN_VERSION="18.0.0"
 TRY_VERSION="1.5.3"
 GLOW_VERSION="2.1.2"
+TREE_SITTER_VERSION="0.26.8"
 
 # --- Platform ---
 case "$OS/$ARCH" in
-    Linux/x86_64)  fzf_arch="linux_amd64"  rg_target="x86_64-unknown-linux-musl"  nvim_platform="linux-x86_64"  bw_platform="linux"  node_platform="linux-x64"   ;;
-    Linux/aarch64) fzf_arch="linux_arm64"   rg_target="aarch64-unknown-linux-gnu"  nvim_platform="linux-arm64"   bw_platform="linux"  node_platform="linux-arm64" ;;
-    Darwin/x86_64) fzf_arch="darwin_amd64"  rg_target="x86_64-apple-darwin"        nvim_platform="macos-x86_64"  bw_platform="macos"  node_platform="darwin-x64"  ;;
-    Darwin/arm64)  fzf_arch="darwin_arm64"  rg_target="aarch64-apple-darwin"       nvim_platform="macos-arm64"   bw_platform="macos"  node_platform="darwin-arm64" ;;
+    Linux/x86_64)  fzf_arch="linux_amd64";  rg_target="x86_64-unknown-linux-musl"; nvim_platform="linux-x86_64"; bw_platform="linux"; node_platform="linux-x64";   tree_sitter_asset="tree-sitter-cli-linux-x64.zip" ;;
+    Linux/aarch64) fzf_arch="linux_arm64";  rg_target="aarch64-unknown-linux-gnu"; nvim_platform="linux-arm64";  bw_platform="linux"; node_platform="linux-arm64"; tree_sitter_asset="tree-sitter-cli-linux-arm64.zip" ;;
+    Darwin/x86_64) fzf_arch="darwin_amd64"; rg_target="x86_64-apple-darwin";       nvim_platform="macos-x86_64"; bw_platform="macos"; node_platform="darwin-x64";  tree_sitter_asset="tree-sitter-cli-macos-x64.zip" ;;
+    Darwin/arm64)  fzf_arch="darwin_arm64"; rg_target="aarch64-apple-darwin";      nvim_platform="macos-arm64";  bw_platform="macos"; node_platform="darwin-arm64"; tree_sitter_asset="tree-sitter-cli-macos-arm64.zip" ;;
     *) echo "Unsupported: $OS/$ARCH"; exit 1 ;;
 esac
 
@@ -163,7 +164,8 @@ if ! command -v bw >/dev/null 2>&1; then
 fi
 
 # tmux — needs system libraries, just advise
-if ! command -v tmux >/dev/null 2>&1; then
+tmux_path="$(command -v tmux 2>/dev/null || true)"
+if [ -z "$tmux_path" ]; then
     echo ""
     echo "tmux not found (optional — needed for remarimo)."
     if [ "$OS" = "Darwin" ]; then
@@ -171,6 +173,9 @@ if ! command -v tmux >/dev/null 2>&1; then
     else
         echo "  Install: sudo apt install tmux  (or ask sysadmin)"
     fi
+elif [ "${tmux_path#"$HOME/miniconda3/"}" != "$tmux_path" ]; then
+    echo "tmux $(tmux -V) found at $tmux_path"
+    echo "  Note: this tmux comes from miniconda and will disappear if miniconda is removed."
 else
     echo "tmux $(tmux -V) found — 3.2+ recommended for full config support."
 fi
@@ -220,22 +225,21 @@ if ! command -v pi >/dev/null 2>&1; then
     "$BIN/npm" install -g --prefix="$LOCAL" @mariozechner/pi-coding-agent
 fi
 
-# rust — needed for tree-sitter-cli
-export PATH="$HOME/.cargo/bin:$PATH"
-if ! command -v cargo >/dev/null 2>&1; then
-    echo "Installing rust (rustup)..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-    echo "  → rust $(rustc --version)"
-else
-    # Ensure toolchain is up to date (tree-sitter needs latest stable)
-    rustup update stable 2>/dev/null
-fi
-
 # tree-sitter — needed by nvim-treesitter to compile parsers
 if ! command -v tree-sitter >/dev/null 2>&1; then
-    echo "Installing tree-sitter-cli..."
-    # C_INCLUDE_PATH fixes broken clang include paths on RHEL/CentOS
-    C_INCLUDE_PATH="$(gcc -print-file-name=include)" cargo install tree-sitter-cli
+    echo "Installing tree-sitter-cli ${TREE_SITTER_VERSION}..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${tree_sitter_asset}" "$tmp/tree-sitter.zip"
+      if command -v unzip >/dev/null 2>&1; then
+          unzip -o "$tmp/tree-sitter.zip" -d "$tmp/tree-sitter-out" >/dev/null
+      elif command -v python3 >/dev/null 2>&1; then
+          python3 -c "import zipfile; zipfile.ZipFile('$tmp/tree-sitter.zip').extractall('$tmp/tree-sitter-out')"
+      else
+          echo "  Skipped: need unzip or python3 to extract tree-sitter-cli" >&2
+          exit 1
+      fi
+      cp "$tmp/tree-sitter-out/tree-sitter" "$BIN/"
+      chmod +x "$BIN/tree-sitter" )
     echo "  → tree-sitter $(tree-sitter --version)"
 fi
 

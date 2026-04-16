@@ -1,0 +1,43 @@
+#!/bin/sh
+# Install or update cscs-key into ~/.local/bin.
+
+set -eu
+
+VERSION="${CSCS_KEY_VERSION:-1.0.0}"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+BIN_DIR="${HOME}/.local/bin"
+
+case "${OS}/${ARCH}" in
+    Darwin/arm64)  asset="cscs-key-${VERSION}-macos-aarch64.tar.gz" ;;
+    Linux/x86_64)  asset="cscs-key-${VERSION}-linux-x86_64.tar.gz" ;;
+    *)
+        echo "Unsupported platform: ${OS}/${ARCH}" >&2
+        exit 1
+        ;;
+esac
+
+fetch() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL -o "$2" "$1"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$2" "$1"
+    else
+        echo "curl or wget is required" >&2
+        exit 1
+    fi
+}
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+mkdir -p "$BIN_DIR"
+url="https://github.com/eth-cscs/cscs-key/releases/download/${VERSION}/${asset}"
+archive="${tmp}/${asset}"
+
+echo "Installing cscs-key ${VERSION} for ${OS}/${ARCH}..."
+fetch "$url" "$archive"
+tar -xzf "$archive" -C "$tmp"
+install -m 0755 "$tmp/cscs-key" "${BIN_DIR}/cscs-key"
+
+"${BIN_DIR}/cscs-key" --version

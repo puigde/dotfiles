@@ -1,0 +1,20 @@
+#!/bin/sh
+# Sign the default CSCS SSH key for interactive use.
+
+set -eu
+
+KEY_FILE="${CSCS_SSH_KEY_FILE:-${HOME}/.ssh/cscs-key}"
+DURATION="${1:-${CSCS_KEY_DURATION:-1d}}"
+
+if ! command -v cscs-key >/dev/null 2>&1; then
+    echo "cscs-key is not installed. Run: cscs-key-install" >&2
+    exit 1
+fi
+
+if [ ! -f "$KEY_FILE" ]; then
+    echo "SSH key not found: $KEY_FILE" >&2
+    echo "Generate it with: ssh-keygen -t ed25519 -f $KEY_FILE" >&2
+    exit 1
+fi
+
+exec cscs-key sign -f "$KEY_FILE" -d "$DURATION"

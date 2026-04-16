@@ -17,6 +17,10 @@ alias cld='claude --dangerously-skip-permissions'
 alias cod='OPENAI_API_KEY=$(bw get password OPENAI_API_KEY) codex --full-auto'
 alias lg='env -u NO_COLOR GLOW_STYLE=light glow'
 alias dg='env -u NO_COLOR GLOW_STYLE=dark glow'
+alias cdoc='cscs-doctor'
+alias csign='cscs-sign'
+alias cela='ssh ela'
+alias clar='ssh clariden'
 
 # Vaults (only if paths are set)
 [ -n "$LAB_VAULT" ]  && alias ola='cd "$LAB_VAULT"'

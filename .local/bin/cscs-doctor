@@ -1,0 +1,92 @@
+#!/bin/sh
+# Check local CSCS CLI prerequisites and certificate status.
+
+set -eu
+
+KEY_FILE="${CSCS_SSH_KEY_FILE:-${HOME}/.ssh/cscs-key}"
+PUB_FILE="${KEY_FILE}.pub"
+CERT_FILE="${CSCS_SSH_CERT_FILE:-${HOME}/.ssh/cscs-key-cert.pub}"
+status=0
+
+check_ok() {
+    printf '[ok] %s\n' "$1"
+}
+
+check_warn() {
+    printf '[warn] %s\n' "$1"
+    status=1
+}
+
+if command -v cscs-key >/dev/null 2>&1; then
+    check_ok "cscs-key: $(cscs-key --version)"
+else
+    check_warn "cscs-key not found in PATH. Run: cscs-key-install"
+fi
+
+[ -f "$KEY_FILE" ] && check_ok "private key: $KEY_FILE" || check_warn "missing private key: $KEY_FILE"
+[ -f "$PUB_FILE" ] && check_ok "public key: $PUB_FILE" || check_warn "missing public key: $PUB_FILE"
+
+if [ -f "$CERT_FILE" ]; then
+    valid_line="$(ssh-keygen -L -f "$CERT_FILE" 2>/dev/null | awk -F'Valid: ' '/Valid: / {print $2}')"
+    valid_to="$(printf '%s\n' "$valid_line" | awk -F' to ' '{print $2}')"
+    if [ -n "$valid_line" ]; then
+        cert_state="$(
+            VALID_TO="$valid_to" python3 - <<'PY'
+from datetime import datetime, timedelta
+import os
+
+valid_to = os.environ.get("VALID_TO", "").strip()
+if not valid_to:
+    print("unknown")
+    raise SystemExit(0)
+
+expires = datetime.fromisoformat(valid_to)
+now = datetime.now()
+
+if expires <= now:
+    print("expired")
+elif expires - now <= timedelta(hours=12):
+    print("expiring")
+else:
+    print("valid")
+PY
+        )"
+        case "$cert_state" in
+            valid)
+                check_ok "certificate: $CERT_FILE ($valid_line)"
+                ;;
+            expiring)
+                check_warn "certificate expiring soon: $CERT_FILE ($valid_line)"
+                ;;
+            expired)
+                check_warn "certificate expired: $CERT_FILE ($valid_line). Run: cscs-sign"
+                ;;
+            *)
+                check_warn "certificate exists but status is unclear: $CERT_FILE ($valid_line)"
+                ;;
+        esac
+    else
+        check_warn "certificate exists but could not be parsed: $CERT_FILE"
+    fi
+else
+    check_warn "missing certificate: $CERT_FILE"
+fi
+
+if ssh -G ela >/dev/null 2>&1; then
+    check_ok "ssh host available: ela"
+else
+    check_warn "ssh host missing: ela"
+fi
+
+if ssh -G clariden >/dev/null 2>&1; then
+    check_ok "ssh host available: clariden"
+else
+    check_warn "ssh host missing: clariden"
+fi
+
+if [ "$status" -ne 0 ]; then
+    echo "CSCS setup is incomplete."
+    exit "$status"
+fi
+
+echo "CSCS local setup looks usable. If login fails, refresh the certificate with: cscs-sign"

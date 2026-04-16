@@ -1,6 +1,7 @@
 # Interactive bash config
 [ -z "$PS1" ] && return  # bail if non-interactive
 
+[ -z "$EDITOR" ] && [ -f "$HOME/.config/shell/profile" ] && . "$HOME/.config/shell/profile"
 [ -f "$HOME/.config/shell/aliases" ] && . "$HOME/.config/shell/aliases"
 [ -f "$HOME/.config/shell/functions" ] && . "$HOME/.config/shell/functions"
 
@@ -23,3 +24,5 @@ if [ "$(uname)" = "Linux" ]; then
         [ -f /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
     fi
 fi
+
+[ -f "$HOME/.shellrc.local" ] && . "$HOME/.shellrc.local"

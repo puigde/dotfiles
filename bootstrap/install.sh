@@ -23,6 +23,8 @@ NODE_MIN_VERSION="18.0.0"
 TRY_VERSION="1.5.3"
 GLOW_VERSION="2.1.2"
 TREE_SITTER_VERSION="0.26.8"
+LIBEVENT_VERSION="2.1.12-stable"
+TMUX_VERSION="3.5a"
 
 # --- Platform ---
 case "$OS/$ARCH" in
@@ -95,6 +97,17 @@ if ! command -v glow >/dev/null 2>&1; then
     echo "  → glow ${GLOW_VERSION}"
 fi
 
+# Rust toolchain — needed for source-building tree-sitter-cli on Linux
+if ! command -v cargo >/dev/null 2>&1 || ! command -v rustc >/dev/null 2>&1; then
+    echo "Installing Rust (stable, minimal profile)..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://sh.rustup.rs" "$tmp/rustup-init.sh"
+      sh "$tmp/rustup-init.sh" -y --profile minimal --default-toolchain stable --no-modify-path >/dev/null )
+    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+    echo "  → cargo $(cargo --version)"
+    echo "  → rustc $(rustc --version)"
+fi
+
 # cmake — prebuilt binary, needed for building neovim on Linux
 if [ "$OS" = "Linux" ] && ! command -v cmake >/dev/null 2>&1; then
     echo "Installing cmake ${CMAKE_VERSION}..."
@@ -163,15 +176,35 @@ if ! command -v bw >/dev/null 2>&1; then
     echo "  → bw"
 fi
 
-# tmux — needs system libraries, just advise
+# tmux — build locally on Linux if missing
 tmux_path="$(command -v tmux 2>/dev/null || true)"
 if [ -z "$tmux_path" ]; then
-    echo ""
-    echo "tmux not found (optional — needed for remarimo)."
     if [ "$OS" = "Darwin" ]; then
+        echo ""
+        echo "tmux not found (optional — needed for remarimo)."
         echo "  Install: brew install tmux"
     else
-        echo "  Install: sudo apt install tmux  (or ask sysadmin)"
+        echo "Installing libevent ${LIBEVENT_VERSION} for local tmux build..."
+        ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+          fetch "https://github.com/libevent/libevent/releases/download/release-${LIBEVENT_VERSION}/libevent-${LIBEVENT_VERSION}.tar.gz" "$tmp/libevent.tar.gz"
+          tar xzf "$tmp/libevent.tar.gz" -C "$tmp"
+          cd "$tmp/libevent-${LIBEVENT_VERSION}"
+          ./configure --prefix="$LOCAL" >/dev/null
+          make -j"$(nproc 2>/dev/null || echo 2)" >/dev/null
+          make install >/dev/null )
+
+        echo "Installing tmux ${TMUX_VERSION}..."
+        ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+          fetch "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" "$tmp/tmux.tar.gz"
+          tar xzf "$tmp/tmux.tar.gz" -C "$tmp"
+          cd "$tmp/tmux-${TMUX_VERSION}"
+          export PKG_CONFIG_PATH="$LOCAL/lib/pkgconfig:$LOCAL/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+          export CPPFLAGS="-I$LOCAL/include${CPPFLAGS:+ $CPPFLAGS}"
+          export LDFLAGS="-L$LOCAL/lib -L$LOCAL/lib64${LDFLAGS:+ $LDFLAGS}"
+          ./configure --prefix="$LOCAL" >/dev/null
+          make -j"$(nproc 2>/dev/null || echo 2)" >/dev/null
+          make install >/dev/null )
+        echo "  → tmux $("$BIN/tmux" -V)"
     fi
 elif [ "${tmux_path#"$HOME/miniconda3/"}" != "$tmux_path" ]; then
     echo "tmux $(tmux -V) found at $tmux_path"
@@ -226,21 +259,41 @@ if ! command -v pi >/dev/null 2>&1; then
 fi
 
 # tree-sitter — needed by nvim-treesitter to compile parsers
-if ! command -v tree-sitter >/dev/null 2>&1; then
+if ! command -v tree-sitter >/dev/null 2>&1 || ! tree-sitter --version >/dev/null 2>&1; then
+    # Remove stale or incompatible local binary before retrying.
+    [ -e "$BIN/tree-sitter" ] && rm -f "$BIN/tree-sitter"
     echo "Installing tree-sitter-cli ${TREE_SITTER_VERSION}..."
-    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
-      fetch "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${tree_sitter_asset}" "$tmp/tree-sitter.zip"
-      if command -v unzip >/dev/null 2>&1; then
-          unzip -o "$tmp/tree-sitter.zip" -d "$tmp/tree-sitter-out" >/dev/null
-      elif command -v python3 >/dev/null 2>&1; then
-          python3 -c "import zipfile; zipfile.ZipFile('$tmp/tree-sitter.zip').extractall('$tmp/tree-sitter-out')"
-      else
-          echo "  Skipped: need unzip or python3 to extract tree-sitter-cli" >&2
-          exit 1
-      fi
-      cp "$tmp/tree-sitter-out/tree-sitter" "$BIN/"
-      chmod +x "$BIN/tree-sitter" )
-    echo "  → tree-sitter $(tree-sitter --version)"
+    if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
+        if cargo install \
+            --root="$LOCAL" \
+            --force \
+            --locked \
+            tree-sitter-cli \
+            --version "$TREE_SITTER_VERSION" \
+            --no-default-features; then
+            echo "  → tree-sitter $(tree-sitter --version)"
+        else
+            echo "  Skipped: cargo build of tree-sitter-cli failed" >&2
+        fi
+    elif ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+        fetch "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${tree_sitter_asset}" "$tmp/tree-sitter.zip"
+        if command -v unzip >/dev/null 2>&1; then
+            unzip -o "$tmp/tree-sitter.zip" -d "$tmp/tree-sitter-out" >/dev/null
+        elif command -v python3 >/dev/null 2>&1; then
+            python3 -c "import zipfile; zipfile.ZipFile('$tmp/tree-sitter.zip').extractall('$tmp/tree-sitter-out')"
+        else
+            echo "  Skipped: need unzip or python3 to extract tree-sitter-cli" >&2
+            exit 1
+        fi
+        if "$tmp/tree-sitter-out/tree-sitter" --version >/dev/null 2>&1; then
+            cp "$tmp/tree-sitter-out/tree-sitter" "$BIN/"
+            chmod +x "$BIN/tree-sitter"
+        else
+            echo "  Skipped: prebuilt tree-sitter-cli is incompatible on this system" >&2
+            exit 1
+        fi ); then
+        echo "  → tree-sitter $(tree-sitter --version)"
+    fi
 fi
 
 # try-cli — build from source (prebuilt binaries are Nix-linked, not portable)
@@ -259,10 +312,15 @@ fi
 # --- Config ---
 
 # Ask for vault paths
-printf 'Lab vault path? [~/Documents/lab] (enter to skip): '
-read -r lab_vault
-printf 'Life vault path? [~/Documents/life] (enter to skip): '
-read -r life_vault
+if [ -t 0 ]; then
+    printf 'Lab vault path? [~/Documents/lab] (enter to skip): '
+    read -r lab_vault
+    printf 'Life vault path? [~/Documents/life] (enter to skip): '
+    read -r life_vault
+else
+    lab_vault=""
+    life_vault=""
+fi
 
 # Write local config
 mkdir -p "$HOME/.local/state"
@@ -314,6 +372,7 @@ backup "$HOME/.zshenv"
 backup "$HOME/.zprofile"
 backup "$HOME/.bashrc"
 backup "$HOME/.bash_profile"
+backup "$HOME/.inputrc"
 backup "$HOME/.vimrc"
 backup "$HOME/.config/nvim/init.lua"
 backup "$HOME/.config/nvim/lazy-lock.json"

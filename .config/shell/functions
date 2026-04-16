@@ -128,6 +128,27 @@ bwunlock() {
     export BW_SESSION=$(bw unlock --raw)
 }
 
+# pi: wrapper that unlocks Bitwarden before invoking the coding agent.
+# pi reads ~/.pi/agent/auth.json and runs `bw get password ...` in a
+# subprocess with no stdin — so if the vault is locked, bw can't prompt
+# and pi gets no key. Ensure BW_SESSION is set before handing off.
+pi() {
+    if command -v bw >/dev/null 2>&1; then
+        local bw_status
+        bw_status=$(bw status 2>/dev/null | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')
+        if [ "$bw_status" != "unlocked" ]; then
+            export BW_SESSION=$(bw unlock --raw) || return 1
+        fi
+        # Preflight: confirm the key pi will ask for actually resolves.
+        # Keeps pi from launching into a "No API key" dead-end.
+        if ! bw get password OPENAI_API_KEY >/dev/null 2>&1; then
+            echo "pi: bw get password OPENAI_API_KEY failed — check the entry exists and BW_SESSION is valid" >&2
+            return 1
+        fi
+    fi
+    command pi "$@"
+}
+
 # bwlock: lock vault and clear session
 bwlock() {
     bw lock

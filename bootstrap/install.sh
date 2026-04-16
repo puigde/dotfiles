@@ -311,15 +311,25 @@ fi
 
 # --- Config ---
 
-# Ask for vault paths
+# Pick up any existing vault paths so re-runs don't clobber them
+[ -f "$HOME/.dotfiles.local" ] && . "$HOME/.dotfiles.local"
+
+lab_default="${LAB_VAULT:-}"
+[ -z "$lab_default" ] && [ -d "$HOME/Documents/lab" ] && lab_default="$HOME/Documents/lab"
+life_default="${LIFE_VAULT:-}"
+[ -z "$life_default" ] && [ -d "$HOME/Documents/life" ] && life_default="$HOME/Documents/life"
+
+# Ask for vault paths (enter keeps the current/default value)
 if [ -t 0 ]; then
-    printf 'Lab vault path? [~/Documents/lab] (enter to skip): '
-    read -r lab_vault
-    printf 'Life vault path? [~/Documents/life] (enter to skip): '
-    read -r life_vault
+    printf 'Lab vault path? [%s] (enter to keep): ' "${lab_default:-skip}"
+    read -r lab_input
+    lab_vault="${lab_input:-$lab_default}"
+    printf 'Life vault path? [%s] (enter to keep): ' "${life_default:-skip}"
+    read -r life_input
+    life_vault="${life_input:-$life_default}"
 else
-    lab_vault=""
-    life_vault=""
+    lab_vault="$lab_default"
+    life_vault="$life_default"
 fi
 
 # Write local config
@@ -327,18 +337,8 @@ mkdir -p "$HOME/.local/state"
 cat > "$HOME/.dotfiles.local" << EOF
 # Machine-local dotfiles config
 EOF
-
-if [ -n "$lab_vault" ]; then
-    echo "export LAB_VAULT=\"$lab_vault\"" >> "$HOME/.dotfiles.local"
-elif [ -d "$HOME/Documents/lab" ]; then
-    echo "export LAB_VAULT=\"\$HOME/Documents/lab\"" >> "$HOME/.dotfiles.local"
-fi
-
-if [ -n "$life_vault" ]; then
-    echo "export LIFE_VAULT=\"$life_vault\"" >> "$HOME/.dotfiles.local"
-elif [ -d "$HOME/Documents/life" ]; then
-    echo "export LIFE_VAULT=\"\$HOME/Documents/life\"" >> "$HOME/.dotfiles.local"
-fi
+[ -n "$lab_vault" ]  && echo "export LAB_VAULT=\"$lab_vault\""   >> "$HOME/.dotfiles.local"
+[ -n "$life_vault" ] && echo "export LIFE_VAULT=\"$life_vault\"" >> "$HOME/.dotfiles.local"
 
 # Pi auth (command-based secret resolution, no keys on disk)
 mkdir -p "$HOME/.pi/agent"
@@ -348,6 +348,18 @@ cat > "$HOME/.pi/agent/auth.json" << 'EOF'
 }
 EOF
 chmod 600 "$HOME/.pi/agent/auth.json"
+
+# Pi extension: expose PI_SESSION_ID to child processes.
+mkdir -p "$HOME/.pi/extensions"
+cat > "$HOME/.pi/extensions/session-env.ts" << 'EOF'
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+
+export default function (pi: ExtensionAPI) {
+    pi.on("session_start", async (_event, ctx) => {
+        process.env.PI_SESSION_ID = ctx.sessionManager.getSessionId();
+    });
+}
+EOF
 
 # --- Backup conflicting files ---
 BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%Y%m%d)"

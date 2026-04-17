@@ -139,12 +139,15 @@ pi() {
         if [ "$bw_status" != "unlocked" ]; then
             export BW_SESSION=$(bw unlock --raw) || return 1
         fi
-        # Preflight: confirm the key pi will ask for actually resolves.
+        # Preflight: confirm the keys pi will ask for actually resolve.
         # Keeps pi from launching into a "No API key" dead-end.
-        if ! bw get password OPENAI_API_KEY >/dev/null 2>&1; then
-            echo "pi: bw get password OPENAI_API_KEY failed — check the entry exists and BW_SESSION is valid" >&2
-            return 1
-        fi
+        local k
+        for k in OPENAI_API_KEY XAI_API_KEY; do
+            if ! bw get password "$k" >/dev/null 2>&1; then
+                echo "pi: bw get password $k failed — check the entry exists and BW_SESSION is valid" >&2
+                return 1
+            fi
+        done
     fi
     command pi "$@"
 }

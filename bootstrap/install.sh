@@ -344,7 +344,8 @@ EOF
 mkdir -p "$HOME/.pi/agent"
 cat > "$HOME/.pi/agent/auth.json" << 'EOF'
 {
-  "openai": { "type": "api_key", "key": "!bw get password OPENAI_API_KEY" }
+  "openai": { "type": "api_key", "key": "!bw get password OPENAI_API_KEY" },
+  "xai":    { "type": "api_key", "key": "!bw get password XAI_API_KEY" }
 }
 EOF
 chmod 600 "$HOME/.pi/agent/auth.json"

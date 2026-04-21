@@ -22,6 +22,7 @@ NVIM_MIN_VERSION="0.10.0"
 NODE_MIN_VERSION="18.0.0"
 TRY_VERSION="1.5.3"
 GLOW_VERSION="2.1.2"
+UV_VERSION="0.11.7"
 TREE_SITTER_VERSION="0.26.8"
 LIBEVENT_VERSION="2.1.12-stable"
 TMUX_VERSION="3.5a"
@@ -294,6 +295,15 @@ if ! command -v tree-sitter >/dev/null 2>&1 || ! tree-sitter --version >/dev/nul
         fi ); then
         echo "  → tree-sitter $(tree-sitter --version)"
     fi
+fi
+
+# uv — Python package/env manager (pins its own Python)
+if ! command -v uv >/dev/null 2>&1; then
+    echo "Installing uv ${UV_VERSION}..."
+    ( tmp=$(mktemp -d) && trap "rm -rf '$tmp'" EXIT
+      fetch "https://astral.sh/uv/${UV_VERSION}/install.sh" "$tmp/uv-install.sh"
+      UV_UNMANAGED_INSTALL="$BIN" sh "$tmp/uv-install.sh" >/dev/null )
+    echo "  → uv $("$BIN/uv" --version 2>/dev/null || echo installed)"
 fi
 
 # try-cli — build from source (prebuilt binaries are Nix-linked, not portable)
